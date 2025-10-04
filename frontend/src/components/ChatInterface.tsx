@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 
 interface Message {
   id: string;
@@ -144,7 +143,7 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Welcome to Visa Genie!</h3>
                 <p className="text-gray-600 max-w-md">
-                  I'm here to help you with all your visa requirements. Ask me about destinations, 
+                  I&apos;m here to help you with all your visa requirements. Ask me about destinations, 
                   document requirements, processing times, or anything else related to travel visas.
                 </p>
               </div>

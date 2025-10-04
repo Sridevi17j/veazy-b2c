@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface VisaDetailsProps {
   country: string;
@@ -42,13 +42,7 @@ export default function VisaDetails({ country, countryCode, purpose, onChatOpen 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (country && purpose) {
-      fetchVisaDetails();
-    }
-  }, [country, countryCode, purpose]);
-
-  const fetchVisaDetails = async () => {
+  const fetchVisaDetails = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -65,7 +59,13 @@ export default function VisaDetails({ country, countryCode, purpose, onChatOpen 
     } finally {
       setLoading(false);
     }
-  };
+  }, [countryCode, purpose]);
+
+  useEffect(() => {
+    if (country && purpose) {
+      fetchVisaDetails();
+    }
+  }, [country, purpose, fetchVisaDetails]);
 
   if (loading) {
     return (

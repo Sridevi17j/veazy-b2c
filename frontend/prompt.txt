@@ -1,0 +1,204 @@
+Build a Next js page that matches the attached PNG for look and feel, and use the JSON below as the source of truth for structure and text. Use App Router and Tailwind CSS and return only the full code for app/page.tsx with no extra text.
+
+Follow these rules:
+1) Use semantic tags for header and main and section and form and label and input and button
+2) Use grid and flex for layout and use absolute positioning only when it is clearly needed
+3) Map each JSON layer as follows
+   - type TEXT becomes an element like h1 or h2 or p or label or button with the same content and with the given font family and size and weight and color
+   - type RECT becomes a div or a card or an input shell with the given background color and size as a guide
+4) Use x and y and width and height from JSON as hints for spacing, then make the layout responsive with Tailwind breakpoints
+5) Keep spacing and alignment and font sizes close to the PNG and prefer Tailwind spacing scale
+6) Use the JSON fill color for text color or background as appropriate and fall back to sensible defaults if a value is missing
+7) Do not invent content and do not add comments and do not add prose, return code only
+
+Here is the JSON layout spec for the screen:
+{
+  "frame": {
+    "name": "Travel Input page",
+    "width": 1440,
+    "height": 1024,
+    "bg": "#FFFFFF"
+  },
+  "layers": [
+    {
+      "type": "TEXT",
+      "name": "Primary",
+      "x": 1391,
+      "y": 177,
+      "w": 88,
+      "h": 20,
+      "content": "Visa Genie",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 700
+      },
+      "fill": "#FFFFFF"
+    },
+    {
+      "type": "TEXT",
+      "name": "Label",
+      "x": 343,
+      "y": 369,
+      "w": 209,
+      "h": 20,
+      "content": "Country",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 500
+      },
+      "fill": "#282828"
+    },
+    {
+      "type": "TEXT",
+      "name": "Placeholder",
+      "x": 357,
+      "y": 408,
+      "w": 96,
+      "h": 20,
+      "content": "Placeholder",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 400
+      },
+      "fill": "#AFAFAF"
+    },
+    {
+      "type": "TEXT",
+      "name": "Label",
+      "x": 692,
+      "y": 369,
+      "w": 214,
+      "h": 20,
+      "content": "Date from",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 500
+      },
+      "fill": "#282828"
+    },
+    {
+      "type": "TEXT",
+      "name": "Placeholder",
+      "x": 706,
+      "y": 408,
+      "w": 96,
+      "h": 20,
+      "content": "Placeholder",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 400
+      },
+      "fill": "#AFAFAF"
+    },
+    {
+      "type": "TEXT",
+      "name": "Label",
+      "x": 926,
+      "y": 369,
+      "w": 213,
+      "h": 20,
+      "content": "Date to",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 500
+      },
+      "fill": "#282828"
+    },
+    {
+      "type": "TEXT",
+      "name": "Placeholder",
+      "x": 940,
+      "y": 408,
+      "w": 96,
+      "h": 20,
+      "content": "Placeholder",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 400
+      },
+      "fill": "#AFAFAF"
+    },
+    {
+      "type": "TEXT",
+      "name": "Label",
+      "x": 1159,
+      "y": 369,
+      "w": 326,
+      "h": 20,
+      "content": "Purpose of Travel",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 500
+      },
+      "fill": "#282828"
+    },
+    {
+      "type": "TEXT",
+      "name": "Placeholder",
+      "x": 1173,
+      "y": 408,
+      "w": 96,
+      "h": 20,
+      "content": "Placeholder",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 400
+      },
+      "fill": "#AFAFAF"
+    },
+    {
+      "type": "TEXT",
+      "name": "Not sure about your visa type, required documents, or even how to plan your itinerary? Let Visa Genie handle it for you—get personalized guidance instantly.",
+      "x": 343,
+      "y": 969,
+      "w": 795,
+      "h": 44,
+      "content": "Not sure about your visa type, required documents, or even how to plan your itinerary? Let Visa Genie handle it for you—get personalized guidance instantly.",
+      "font": {
+        "family": "Montserrat",
+        "size": 18,
+        "weight": 600
+      },
+      "fill": "#000000"
+    },
+    {
+      "type": "TEXT",
+      "name": "Primary",
+      "x": 1264,
+      "y": 983,
+      "w": 124,
+      "h": 20,
+      "content": "Ask Visa Genie",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 700
+      },
+      "fill": "#FFFFFF"
+    },
+    {
+      "type": "TEXT",
+      "name": "Primary",
+      "x": 875,
+      "y": 574,
+      "w": 77,
+      "h": 20,
+      "content": "Continue",
+      "font": {
+        "family": "Montserrat",
+        "size": 16,
+        "weight": 700
+      },
+      "fill": "#FFFFFF"
+    }
+  ]
+}

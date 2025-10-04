@@ -1,0 +1,248 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-plus-jakarta-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-plus-jakarta-sans);
+}
+
+/* Custom styles for react-date-picker */
+.react-date-picker {
+  width: 100%;
+  max-width: 100%;
+}
+
+.react-date-picker__wrapper {
+  padding: 0.75rem; /* Same as p-3 in Tailwind */
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.875rem; /* Same as text-sm */
+}
+
+.react-date-picker__wrapper:focus-within {
+  border-color: #9333ea;
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2);
+}
+
+.react-date-picker__inputGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+
+.react-date-picker__inputGroup__input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  padding: 0;
+  width: 2ch; /* Fixed width for day/month inputs */
+  min-width: 0;
+  flex-shrink: 1;
+  text-align: center;
+}
+
+.react-date-picker__inputGroup__year {
+  width: 4ch !important; /* Fixed width for year input */
+}
+
+.react-date-picker__inputGroup__divider {
+  color: #6b7280;
+}
+
+.react-date-picker__button {
+  border: none;
+  background: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.react-date-picker__button:hover {
+  color: #374151;
+}
+
+/* Calendar popup styles */
+.react-calendar {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  font-family: inherit;
+}
+
+.react-calendar__navigation {
+  display: flex;
+  height: 44px;
+  margin-bottom: 16px;
+}
+
+.react-calendar__navigation button {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.react-calendar__navigation button:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 500;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.react-calendar__month-view__days__day,
+.react-calendar__tile {
+  background: none;
+  border: none;
+  padding: 8px;
+  margin: 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.1s, color 0.1s, transform 0.1s;
+  font-size: 14px;
+  position: relative;
+}
+
+.react-calendar__tile:active {
+  background: #3b82f6 !important;
+  color: white !important;
+  transform: scale(0.98);
+}
+
+/* Removed - handled by more specific rules below */
+
+/* Remove duplicate rules - handled above */
+
+/* Reset all tiles first */
+.react-calendar__tile {
+  background: transparent !important;
+  color: inherit !important;
+  font-weight: normal !important;
+}
+
+/* Then apply active styles */
+.react-calendar__tile--active {
+  background: #3b82f6 !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Hover for active tiles */
+.react-calendar__tile--active:hover {
+  background: #2563eb !important;
+  color: white !important;
+}
+
+/* Hover for non-active tiles */
+.react-calendar__tile:not(.react-calendar__tile--active):hover {
+  background: #f3f4f6 !important;
+  color: inherit !important;
+}
+
+.react-calendar__month-view__days__day--neighboringMonth {
+  color: #d1d5db;
+}
+
+.react-calendar__month-view__days__day--weekend {
+  color: #dc2626;
+}
+
+/* Remove today highlighting to avoid confusion */
+.react-calendar__tile--now {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.react-calendar__tile--now:hover {
+  background: #f3f4f6 !important;
+}
+
+/* Global Responsive Utilities */
+.responsive-container {
+  @apply container mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.responsive-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+}
+
+.responsive-form {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+}
+
+.responsive-card {
+  @apply p-4 sm:p-6 lg:p-8;
+}
+
+.responsive-text {
+  @apply text-sm sm:text-base lg:text-lg;
+}
+
+.responsive-spacing {
+  @apply py-8 sm:py-12 lg:py-16;
+}
+
+/* Mobile-first breakpoint utilities */
+@layer utilities {
+  .mobile-stack {
+    @apply flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4;
+  }
+  
+  .mobile-full {
+    @apply w-full sm:w-auto;
+  }
+  
+  .mobile-hidden {
+    @apply hidden sm:block;
+  }
+  
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+  
+  .responsive-overlay {
+    @apply absolute top-4 left-2 right-2 sm:top-8 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:w-auto;
+  }
+}
+

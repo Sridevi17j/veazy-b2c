@@ -18,7 +18,7 @@ interface HeroSectionProps {
   onChatOpen?: () => void;
 }
 
-export default function HeroSection({ onCountrySelect, onPurposeSelect, onChatOpen: _onChatOpen }: HeroSectionProps) {
+export default function HeroSection({ onCountrySelect, onPurposeSelect }: HeroSectionProps) {
   const [departureDate, setDepartureDate] = useState<Date | undefined>(new Date('2025-10-05'));
   const [returnDate, setReturnDate] = useState<Date | undefined>(new Date('2025-10-15'));
   const [today, setToday] = useState<Date | null>(null);

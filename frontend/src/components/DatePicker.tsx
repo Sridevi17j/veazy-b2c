@@ -34,7 +34,7 @@ interface CustomDatePickerProps {
 export default function CustomDatePicker({
   selected,
   onSelect,
-  placeholder: _placeholder = 'Select date',
+  placeholder = 'Select date',
   label,
   fromDate,
   toDate,

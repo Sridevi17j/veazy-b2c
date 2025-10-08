@@ -129,7 +129,7 @@ export default function LandingPage() {
                   Tell our Visa Genie about your travel plans. It understands embassy requirements inside-out.
                 </p>
                 <div className="bg-gray-100 rounded-lg p-4">
-                  <div className="text-sm text-gray-500">💬 "I want to visit Vietnam for tourism"</div>
+                  <div className="text-sm text-gray-500">💬 &ldquo;I want to visit Vietnam for tourism&rdquo;</div>
                 </div>
               </div>
             </div>
@@ -354,7 +354,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <p className="text-gray-700 mb-4">
-                "The AI guidance was incredible - no confusion, everything was clear and straightforward. The form filling was so much easier than I expected!"
+                &ldquo;The AI guidance was incredible - no confusion, everything was clear and straightforward. The form filling was so much easier than I expected!&rdquo;
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
@@ -374,7 +374,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <p className="text-gray-700 mb-4">
-                "The form auto-fill feature is amazing! My Thailand business visa application was smooth and professional. Highly recommend this platform."
+                &ldquo;The form auto-fill feature is amazing! My Thailand business visa application was smooth and professional. Highly recommend this platform.&rdquo;
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
@@ -394,7 +394,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <p className="text-gray-700 mb-4">
-                "The step-by-step guidance made everything crystal clear. Even helped me understand exactly what documents I needed. Excellent service!"
+                &ldquo;The step-by-step guidance made everything crystal clear. Even helped me understand exactly what documents I needed. Excellent service!&rdquo;
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">

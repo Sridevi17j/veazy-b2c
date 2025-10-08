@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
@@ -12,7 +11,6 @@ export default function LandingPage() {
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>('');
   const [selectedPurpose, setSelectedPurpose] = useState<string>('');
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
-  const router = useRouter();
 
   const handleChatOpen = () => {
     setIsChatOpen(true);
@@ -21,22 +19,6 @@ export default function LandingPage() {
   const handleChatClose = () => {
     setIsChatOpen(false);
   };
-
-  // Redirect to application page when both country and purpose are selected
-  useEffect(() => {
-    if (selectedCountry && selectedPurpose && selectedCountryCode) {
-      // Add a small delay for better UX (user can see their selection)
-      setTimeout(() => {
-        // Pass the selected data via URL params to the application page
-        const params = new URLSearchParams({
-          country: selectedCountry,
-          countryCode: selectedCountryCode,
-          purpose: selectedPurpose
-        });
-        router.push(`/veazy?${params.toString()}`);
-      }, 800); // 800ms delay for better user experience
-    }
-  }, [selectedCountry, selectedCountryCode, selectedPurpose, router]);
 
   return (
     <div className="min-h-screen bg-white">

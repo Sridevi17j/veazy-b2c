@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/Header'
 import VisaDetails from '@/components/VisaDetails'
 import ChatInterface from '@/components/ChatInterface'
 
-export default function VisaApplicationPage() {
+function VisaApplicationContent() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>('');
   const [selectedPurpose, setSelectedPurpose] = useState<string>('');
@@ -74,5 +74,22 @@ export default function VisaApplicationPage() {
         onClose={handleChatClose}
       />
     </div>
+  );
+}
+
+export default function VisaApplicationPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white">
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading visa details...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <VisaApplicationContent />
+    </Suspense>
   );
 }

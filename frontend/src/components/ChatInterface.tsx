@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import ChatMessage from './ChatMessage';
+import TypingIndicator from './TypingIndicator';
 
 interface Message {
   id: string;
   content: string;
-  sender: 'user' | 'bot';
+  type: 'human' | 'ai';
   timestamp: Date;
 }
 
@@ -18,32 +20,134 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  const BACKEND_URL = 'https://veazy-backend.onrender.com';
+
+  // Create thread when chat opens
+  useEffect(() => {
+    if (isOpen && !threadId) {
+      createThread();
+    }
+  }, [isOpen, threadId]);
+
+  const createThread = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/threads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create thread');
+      }
+
+      const data = await response.json();
+      setThreadId(data.thread_id);
+      setConnectionError(null);
+    } catch (error) {
+      console.error('Error creating thread:', error);
+      setConnectionError('Failed to connect to Visa Genie. Please try again.');
+    }
+  };
 
   const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || !threadId) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputMessage,
-      sender: 'user',
+      type: 'human',
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = inputMessage;
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate AI response (replace with actual API call later)
-    setTimeout(() => {
-      const botMessage: Message = {
+    try {
+      const response = await fetch(`${BACKEND_URL}/threads/${threadId}/runs/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input: {
+            messages: [{ content: messageToSend }]
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      // Generate unique ID for this conversation turn
+      const conversationTurnId = `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      if (reader) {
+        let currentAiMessage: Message | null = null;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'ai' && data.content) {
+                  if (!currentAiMessage) {
+                    // Start new AI message with unique conversation turn ID
+                    currentAiMessage = {
+                      id: conversationTurnId,
+                      type: 'ai',
+                      content: data.content,
+                      timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, currentAiMessage!]);
+                  } else {
+                    // Update existing AI message - concatenate new content like working version
+                    currentAiMessage.content += data.content;
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === currentAiMessage!.id 
+                        ? { ...msg, content: currentAiMessage!.content }
+                        : msg
+                    ));
+                  }
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse streaming data:', line);
+              }
+            }
+          }
+        }
+      }
+
+      setIsTyping(false);
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setIsTyping(false);
+      
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm Visa Genie! I can help you with your travel visa requirements. What destination are you planning to visit?",
-        sender: 'bot',
+        content: "Sorry, I'm having trouble connecting right now. Please try again in a moment.",
+        type: 'ai',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
-    }, 1000);
+      setMessages(prev => [...prev, errorMessage]);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -134,7 +238,33 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
 
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 ? (
+            {connectionError ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Connection Error</h3>
+                <p className="text-gray-600 max-w-md mb-4">{connectionError}</p>
+                <button 
+                  onClick={createThread}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : !threadId ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Connecting to Visa Genie...</h3>
+                <p className="text-gray-600 max-w-md">
+                  Setting up your personalized visa assistance session.
+                </p>
+              </div>
+            ) : messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
                   <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,37 +276,18 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
                   I&apos;m here to help you with all your visa requirements. Ask me about destinations, 
                   document requirements, processing times, or anything else related to travel visas.
                 </p>
+                <div className="mt-4 flex items-center text-sm text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  Connected and ready to help!
+                </div>
               </div>
             ) : (
               messages.map((message) => (
-                <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.sender === 'user' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-gray-100 text-gray-900'
-                  }`}>
-                    <p className="text-sm">{message.content}</p>
-                    <p className={`text-xs mt-1 ${
-                      message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
-                    }`}>
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
+                <ChatMessage key={message.id} message={message} />
               ))
             )}
             
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {isTyping && <TypingIndicator />}
           </div>
 
           {/* Input Area */}

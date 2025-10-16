@@ -23,7 +23,8 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  const BACKEND_URL = 'https://veazy-backend.onrender.com';
+  const BACKEND_URL = 'http://localhost:8000';
+  // const BACKEND_URL = 'https://veazy-backend.onrender.com';
 
   // Create thread when chat opens
   useEffect(() => {

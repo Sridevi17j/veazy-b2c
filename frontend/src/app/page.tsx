@@ -2,24 +2,46 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Header from '@/components/Header';
-import HeroSection from '@/components/HeroSection';
+import { Navbar } from '@/components/Navbar';
+import NewHero from '@/components/NewHero';
+import { Features } from '@/components/Features';
+import { HowItWorks } from '@/components/HowItWorks';
+import { Stats } from '@/components/Stats';
+import { Testimonials } from '@/components/Testimonials';
+import { CTA } from '@/components/CTA';
+import { Footer } from '@/components/Footer';
 import ChatInterface from '@/components/ChatInterface';
+import AuthModal from '@/components/AuthModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LandingPage() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>('');
   const [selectedPurpose, setSelectedPurpose] = useState<string>('');
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
 
   const handleChatOpen = () => {
-    setIsChatOpen(true);
+    if (isAuthenticated) {
+      setIsChatOpen(true);
+    } else {
+      setIsAuthOpen(true);
+    }
   };
 
   const handleChatClose = () => {
     setIsChatOpen(false);
+  };
+
+  const handleAuthSuccess = () => {
+    setIsAuthOpen(false);
+    setIsChatOpen(true);
+  };
+
+  const handleAuthClose = () => {
+    setIsAuthOpen(false);
   };
 
   // Redirect to application page when both country and purpose are selected
@@ -39,11 +61,11 @@ export default function LandingPage() {
   }, [selectedCountry, selectedCountryCode, selectedPurpose, router]);
 
   return (
-    <div className="min-h-screen bg-white">
-      <Header onChatOpen={handleChatOpen} />
+    <div className="min-h-screen">
+      <Navbar onChatOpen={handleChatOpen} />
       
-      {/* Hero Section with Visa Form */}
-      <HeroSection 
+      {/* Hero Section with 4 dropdowns */}
+      <NewHero 
         onCountrySelect={(country: string, countryCode: string) => {
           setSelectedCountry(country);
           setSelectedCountryCode(countryCode);
@@ -53,446 +75,23 @@ export default function LandingPage() {
         }}
         onChatOpen={handleChatOpen}
       />
-
-      {/* Value Proposition Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 leading-tight">
-              AI-Powered Visa Applications
-              <span className="block text-purple-600 text-xl md:text-2xl mt-2">Made Simple for Everyone</span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              Experience the future of visa applications with intelligent form filling, 
-              real-time guidance, and embassy-approved documentation. 
-              Built for modern travelers who value efficiency and accuracy.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6 group hover:bg-gray-50 rounded-lg transition-colors duration-200">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform duration-200">
-                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Smart & Fast</h3>
-              <p className="text-gray-600 leading-relaxed">AI-powered form filling reduces application time from hours to minutes with intelligent auto-completion</p>
-            </div>
-
-            <div className="text-center p-6 group hover:bg-gray-50 rounded-lg transition-colors duration-200">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform duration-200">
-                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Embassy Approved</h3>
-              <p className="text-gray-600 leading-relaxed">Every application follows official embassy guidelines and requirements for maximum approval rates</p>
-            </div>
-
-            <div className="text-center p-6 group hover:bg-gray-50 rounded-lg transition-colors duration-200">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform duration-200">
-                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Transparent Pricing</h3>
-              <p className="text-gray-600 leading-relaxed">Clear upfront pricing with competitive service fees and no hidden charges or surprise costs</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              How Veazy Works
-            </h2>
-            <p className="text-xl text-gray-600">
-              Three simple steps to get your visa approved
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connection line for desktop */}
-            <div className="hidden md:block absolute top-20 left-1/6 right-1/6 h-1 bg-gradient-to-r from-purple-600 via-purple-400 to-purple-200"></div>
-            
-            <div className="relative">
-              <div className="bg-white rounded-lg p-8 shadow-lg text-center">
-                <div className="w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-6 relative z-10">
-                  1
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Chat with AI</h3>
-                <p className="text-gray-600 mb-6">
-                  Tell our Visa Genie about your travel plans. It understands embassy requirements inside-out.
-                </p>
-                <div className="bg-gray-100 rounded-lg p-4">
-                  <div className="text-sm text-gray-500">💬 &ldquo;I want to visit Vietnam for tourism&rdquo;</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="bg-white rounded-lg p-8 shadow-lg text-center">
-                <div className="w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-6 relative z-10">
-                  2
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Watch AI Fill Forms</h3>
-                <p className="text-gray-600 mb-6">
-                  Our AI automatically maps your details into embassy-approved forms. Review and edit if needed.
-                </p>
-                <div className="bg-gray-100 rounded-lg p-4">
-                  <div className="text-sm text-gray-500">🤖 Auto-filling application...</div>
-                  <div className="w-full bg-purple-200 rounded-full h-2 mt-2">
-                    <div className="bg-purple-600 h-2 rounded-full w-3/4"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="bg-white rounded-lg p-8 shadow-lg text-center">
-                <div className="w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-6 relative z-10">
-                  3
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Get Approved</h3>
-                <p className="text-gray-600 mb-6">
-                  Submit with confidence. Get real-time updates and your visa approval in 3-5 days.
-                </p>
-                <div className="bg-green-100 rounded-lg p-4">
-                  <div className="text-sm text-green-700">✅ Visa Approved!</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Supported Countries Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Popular Destinations
-            </h2>
-            <p className="text-xl text-gray-600">
-              Currently supporting visa applications for these amazing destinations
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="group cursor-pointer" onClick={handleChatOpen}>
-              <div className="relative overflow-hidden rounded-lg shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                <Image 
-                  src="https://images.unsplash.com/photo-1528127269322-539801943592?w=400&h=300&fit=crop&auto=format" 
-                  alt="Vietnam"
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h3 className="text-xl font-bold">Vietnam</h3>
-                  <p className="text-sm opacity-90">Tourist • Business • Social</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="group cursor-pointer" onClick={handleChatOpen}>
-              <div className="relative overflow-hidden rounded-lg shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                <Image 
-                  src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&auto=format" 
-                  alt="Thailand"
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h3 className="text-xl font-bold">Thailand</h3>
-                  <p className="text-sm opacity-90">Tourist • Business • Investment</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="group cursor-pointer" onClick={handleChatOpen}>
-              <div className="relative overflow-hidden rounded-lg shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                <Image 
-                  src="https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?w=400&h=300&fit=crop&auto=format" 
-                  alt="Indonesia"
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h3 className="text-xl font-bold">Indonesia</h3>
-                  <p className="text-sm opacity-90">Tourist • Business • Family</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="group cursor-pointer" onClick={handleChatOpen}>
-              <div className="relative overflow-hidden rounded-lg shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                <Image 
-                  src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&h=300&fit=crop&auto=format" 
-                  alt="UAE"
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h3 className="text-xl font-bold">UAE</h3>
-                  <p className="text-sm opacity-90">Tourist • Business • Investment</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Choose Veazy Section */}
-      <section className="py-16 bg-purple-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Why Travelers Choose Veazy
-            </h2>
-            <p className="text-xl text-gray-600">
-              Advanced technology meets personalized service for seamless visa applications
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Intelligent Form Filling</h3>
-                  <p className="text-gray-600">AI-powered system automatically fills visa forms with your information, reducing errors and saving time.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Document Support</h3>
-                  <p className="text-gray-600">Smart recognition of various document formats and guidance on requirements specific to your nationality.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Real-Time Updates</h3>
-                  <p className="text-gray-600">Stay informed with instant notifications about your application status and next steps.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Success Guarantee</h3>
-                  <p className="text-gray-600">High success rates with professional review and embassy-compliant applications.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative">
-              <Image 
-                src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=400&fit=crop&auto=format" 
-                alt="Happy Indian travelers"
-                width={600}
-                height={400}
-                className="rounded-lg shadow-xl"
-              />
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-lg shadow-lg">
-                <div className="text-2xl font-bold text-purple-600">4.9/5</div>
-                <div className="text-sm text-gray-600">Customer Rating</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              What Travelers Say
-            </h2>
-            <p className="text-xl text-gray-600">
-              Real reviews from real travelers
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-gray-50 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <div className="flex text-yellow-500">
-                  ⭐⭐⭐⭐⭐
-                </div>
-              </div>
-              <p className="text-gray-700 mb-4">
-                &ldquo;The AI guidance was incredible - no confusion, everything was clear and straightforward. The form filling was so much easier than I expected!&rdquo;
-              </p>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                  R
-                </div>
-                <div className="ml-3">
-                  <div className="font-semibold">Rajesh Kumar</div>
-                  <div className="text-sm text-gray-600">Mumbai</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <div className="flex text-yellow-500">
-                  ⭐⭐⭐⭐⭐
-                </div>
-              </div>
-              <p className="text-gray-700 mb-4">
-                &ldquo;The form auto-fill feature is amazing! My Thailand business visa application was smooth and professional. Highly recommend this platform.&rdquo;
-              </p>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                  P
-                </div>
-                <div className="ml-3">
-                  <div className="font-semibold">Priya Sharma</div>
-                  <div className="text-sm text-gray-600">Bangalore</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <div className="flex text-yellow-500">
-                  ⭐⭐⭐⭐⭐
-                </div>
-              </div>
-              <p className="text-gray-700 mb-4">
-                &ldquo;The step-by-step guidance made everything crystal clear. Even helped me understand exactly what documents I needed. Excellent service!&rdquo;
-              </p>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                  A
-                </div>
-                <div className="ml-3">
-                  <div className="font-semibold">Amit Patel</div>
-                  <div className="text-sm text-gray-600">Delhi</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-purple-600 to-purple-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Ready to Get Your Visa?
-          </h2>
-          <p className="text-xl text-purple-100 mb-8">
-            Join thousands of Indian travelers who trust Veazy for their visa applications
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button 
-              onClick={handleChatOpen}
-              className="bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg"
-            >
-              Start Your Application
-            </button>
-            <button 
-              onClick={handleChatOpen}
-              className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-purple-600 transition-colors"
-            >
-              Chat with AI Now
-            </button>
-          </div>
-
-          <div className="mt-8 text-purple-100">
-            <p className="text-sm">✅ No signup required  ✅ Free consultation  ✅ Get started in 2 minutes</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <h3 className="text-2xl font-bold mb-4">Veazy</h3>
-              <p className="text-gray-400 mb-6 max-w-md">
-                The smartest way to get your visas. AI-powered guidance meets professional service for seamless applications.
-              </p>
-              <div className="flex space-x-4">
-                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center">
-                  <span className="text-sm">📱</span>
-                </div>
-                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center">
-                  <span className="text-sm">📧</span>
-                </div>
-                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center">
-                  <span className="text-sm">💬</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Destinations</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>Vietnam Visa</li>
-                <li>Thailand Visa</li>
-                <li>Indonesia Visa</li>
-                <li>UAE Visa</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>Help Center</li>
-                <li>Contact Us</li>
-                <li>Visa Status</li>
-                <li>Refund Policy</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 Veazy. All rights reserved. Made with ❤️ for modern travelers.</p>
-          </div>
-        </div>
-      </footer>
+      
+      <Features />
+      <HowItWorks />
+      <Stats />
+      <Testimonials />
+      <CTA onChatOpen={handleChatOpen} />
+      <Footer />
 
       <ChatInterface 
         isOpen={isChatOpen} 
         onClose={handleChatClose}
+      />
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={handleAuthClose}
+        onSuccess={handleAuthSuccess}
       />
     </div>
   );

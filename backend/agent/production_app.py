@@ -17,6 +17,7 @@ import sys
 sys.path.append('..')  # Add parent directory to path for imports
 from database.mongodb import init_db
 from api.countries import router as countries_router
+from api.auth import router as auth_router
 
 # Global state management for threads
 thread_states = {}
@@ -81,6 +82,7 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(countries_router)
+app.include_router(auth_router)
 
 # Pydantic models
 class MessageRequest(BaseModel):

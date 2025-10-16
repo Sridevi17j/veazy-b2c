@@ -274,11 +274,177 @@ cd /frontend && npm run dev
 ✅ No more overlapping elements on mobile devices
 ✅ Future components can use the same responsive classes
 
+#### Latest Session: Real Backend API Integration & Streaming Chat (January 2025)
+
+**Problem Statement**: 
+- ChatInterface was using mock responses instead of real API
+- User wanted to integrate with deployed backend at `https://veazy-backend.onrender.com`
+- Needed proper streaming Server-Sent Events (SSE) implementation
+- Required modern chat UI components with proper styling
+
+**Implementation Details**:
+
+**Step 1: Route Restructuring & Marketing Page ✅**
+- **Problem**: Application page was at root `/`, needed marketing page at root
+- **Solution**: 
+  - Created comprehensive marketing landing page at `/` (root)
+  - Moved application page to `/veazy` route
+  - Implemented automatic routing with URL parameters for country/purpose selection
+  - Added proper SEO and professional messaging
+
+**Files Changed**:
+- `/frontend/src/app/page.tsx` - Complete marketing landing page with sections:
+  - Hero section with HeroSection component
+  - Value proposition (AI-powered, Embassy approved, Transparent pricing)
+  - How it works (3-step process)
+  - Popular destinations with images
+  - Why choose Veazy features
+  - Customer testimonials
+  - Call-to-action section
+- `/frontend/src/app/veazy/page.tsx` - Application page with Suspense wrapper for useSearchParams
+- URL parameter passing: `?country=Vietnam&countryCode=VNM&purpose=tourism`
+
+**Step 2: Chat Interface Real API Integration ✅**
+- **Problem**: Mock chat responses, no real backend connection
+- **Solution**: Complete rewrite with real API integration
+
+**Backend API Structure**:
+```javascript
+// Thread creation
+POST https://veazy-backend.onrender.com/threads
+Response: { "thread_id": "abc123" }
+
+// Streaming messages  
+POST https://veazy-backend.onrender.com/threads/{threadId}/runs/stream
+Body: { "input": { "messages": [{ "content": "user message" }] } }
+Response: SSE stream with chunks like:
+data: {"id": "ai_123", "type": "ai", "content": "Hello", "created_at": "2025-01-01T00:00:00Z"}
+data: {"id": "ai_124", "type": "ai", "content": "! I'm Veazy", "created_at": "2025-01-01T00:00:00Z"}
+```
+
+**Critical Discovery - SSE Content Handling**:
+- **Initial Error**: Treated each SSE chunk as complete content (replacement)
+- **Correct Approach**: Each chunk contains incremental content that must be concatenated
+- **Fix**: Used `currentAiMessage.content += data.content` like working dummy UI
+- **Result**: Smooth streaming without flashing messages
+
+**Step 3: Modern Chat Components ✅**
+- **Added Dependencies**: `lucide-react` for modern icons
+- **New Components**:
+  - `/frontend/src/components/ChatMessage.tsx` - Message rendering with user/AI styling
+  - `/frontend/src/components/TypingIndicator.tsx` - Animated typing dots
+- **Enhanced Styling**: Added chat-specific CSS classes to `globals.css`
+
+**Message Structure**:
+```typescript
+interface Message {
+  id: string;
+  type: 'human' | 'ai';  // Changed from 'user' | 'bot'
+  content: string;
+  timestamp: Date;
+}
+```
+
+**Step 4: SSE Streaming Implementation ✅**
+- **Thread Management**: Auto-create thread when chat opens
+- **Real-time Streaming**: Process SSE chunks and update UI progressively
+- **Error Handling**: Connection errors, retry logic, user-friendly messages
+- **Loading States**: Connection status, typing indicators, retry buttons
+
+**Key Code Changes**:
+
+**ChatInterface.tsx** - Complete rewrite:
+```javascript
+// Thread creation on chat open
+const createThread = async () => {
+  const response = await fetch(`${BACKEND_URL}/threads`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const data = await response.json();
+  setThreadId(data.thread_id);
+};
+
+// SSE streaming with content concatenation
+const reader = response.body?.getReader();
+let currentAiMessage: Message | null = null;
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  // Parse SSE chunks
+  if (line.startsWith('data: ')) {
+    const data = JSON.parse(line.slice(6));
+    if (data.type === 'ai' && data.content) {
+      if (!currentAiMessage) {
+        // Create new AI message
+        currentAiMessage = { id: conversationTurnId, type: 'ai', content: data.content, timestamp: new Date() };
+        setMessages(prev => [...prev, currentAiMessage!]);
+      } else {
+        // CRITICAL: Concatenate incremental content
+        currentAiMessage.content += data.content;
+        setMessages(prev => prev.map(msg => 
+          msg.id === currentAiMessage!.id 
+            ? { ...msg, content: currentAiMessage!.content }
+            : msg
+        ));
+      }
+    }
+  }
+}
+```
+
+**Step 5: Deployment & Testing ✅**
+- **Frontend**: Successfully deployed to `https://veazy-frontend.onrender.com`
+- **Backend**: Integrated with existing `https://veazy-backend.onrender.com`
+- **Git Commit**: `feat: integrate real backend API with proper streaming chat interface`
+
+**Debugging Process**:
+1. **Issue**: Messages flashing (appearing and disappearing)
+2. **Investigation**: Analyzed working dummy UI from `/mnt/c/Users/sride/Desktop/visa_agent/`
+3. **Root Cause**: Incorrect SSE parsing - was replacing content instead of concatenating
+4. **Solution**: Implemented `+=` concatenation like working version
+5. **Result**: Smooth streaming chat experience
+
+**Technical Architecture**:
+```
+User types message → ChatInterface
+    ↓
+Create/reuse thread → POST /threads (if needed)
+    ↓  
+Send message → POST /threads/{id}/runs/stream
+    ↓
+SSE Stream → data: {"type": "ai", "content": "incremental chunk"}
+    ↓
+Frontend concatenates → currentMessage.content += newChunk.content
+    ↓
+Real-time UI update → Progressive message building
+```
+
+**Files Modified/Created**:
+- `/frontend/package.json` - Added lucide-react dependency
+- `/frontend/src/components/ChatInterface.tsx` - Complete rewrite with real API
+- `/frontend/src/components/ChatMessage.tsx` - New message component
+- `/frontend/src/components/TypingIndicator.tsx` - New typing animation
+- `/frontend/src/app/globals.css` - Added chat UI styles
+- `/frontend/src/app/page.tsx` - Marketing landing page
+- `/frontend/src/app/veazy/page.tsx` - Application page with Suspense
+
+**Current Status**:
+✅ **Real API Integration**: Chat connects to deployed backend
+✅ **Streaming Responses**: Proper SSE implementation with content concatenation  
+✅ **Modern UI**: Professional chat interface with animations
+✅ **Route Structure**: Marketing page at `/`, app at `/veazy`
+✅ **Error Handling**: Connection status, retries, user feedback
+✅ **Deployed**: Both frontend and backend successfully deployed
+
 #### Next Steps (Future Sessions)
-1. **UI/UX Enhancements**: Add animations, better loading states
-2. **Admin Interface**: Web interface for managing visa information (if needed)
-3. **Advanced Features**: Visa recommendation engine, document upload, progress tracking
-4. **Redis Caching**: Replace in-memory cache with Redis for production scaling
+1. **Authentication**: Implement Twilio OTP verification system
+2. **Document Upload**: File handling in chat interface  
+3. **UI/UX Enhancements**: Add animations, better loading states
+4. **Admin Interface**: Web interface for managing visa information (if needed)
+5. **Advanced Features**: Visa recommendation engine, document upload, progress tracking
+6. **Redis Caching**: Replace in-memory cache with Redis for production scaling
 
 #### Important Commands & Troubleshooting
 

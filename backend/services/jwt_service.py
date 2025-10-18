@@ -11,17 +11,16 @@ class JWTService:
     def __init__(self):
         self.secret = os.getenv('JWT_SECRET')
         self.algorithm = 'HS256'
-        self.expiry_days = 7  # Token valid for 7 days
+        self.expiry_days = int(os.getenv('JWT_EXPIRY_DAYS', 30))  # Default 30 days, configurable via env
         
         if not self.secret:
             raise ValueError("JWT_SECRET not found in environment variables")
     
-    def generate_token(self, user_id: str, phone_number: str) -> str:
+    def generate_token(self, user_id: str) -> str:
         """Generate JWT token for authenticated user"""
         now = datetime.utcnow()
         payload = {
             'user_id': user_id,
-            'phone_number': phone_number,
             'iat': now,
             'exp': now + timedelta(days=self.expiry_days),
             'type': 'access'
@@ -63,6 +62,7 @@ class JWTService:
             return datetime.utcnow() > exp
         except:
             return True
+    
 
 # Create a singleton instance
 jwt_service = JWTService()

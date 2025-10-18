@@ -68,10 +68,44 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     }
   };
 
-  // Step 2: Verify OTP (just validation, no DB save yet)
+  // Step 2: Verify OTP with Twilio
   const handleVerifyOTP = async (otpCode: string) => {
-    setUserData(prev => ({ ...prev, otpCode }));
-    setStep('account');
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          country_code: userData.countryCode,
+          local_phone: userData.localPhone,
+          otp_code: otpCode
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // OTP verified successfully, proceed to account setup
+          setUserData(prev => ({ ...prev, otpCode }));
+          setStep('account');
+        } else {
+          setError(data.message || 'OTP verification failed');
+        }
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Invalid OTP code. Please try again.');
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      setError('Verification failed. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Step 3: Collect account info

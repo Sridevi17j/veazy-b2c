@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Navbar } from '@/components/Navbar';
 import NewHero from '@/components/NewHero';
 import { Features } from '@/components/Features';
@@ -10,9 +11,17 @@ import { Stats } from '@/components/Stats';
 import { Testimonials } from '@/components/Testimonials';
 import { CTA } from '@/components/CTA';
 import { Footer } from '@/components/Footer';
-import ChatInterface from '@/components/ChatInterface';
-import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
+
+const ChatInterface = dynamic(() => import('@/components/ChatInterface'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse">Loading chat...</div>
+});
+
+const AuthModal = dynamic(() => import('@/components/AuthModal'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse">Loading...</div>
+});
 
 export default function LandingPage() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');

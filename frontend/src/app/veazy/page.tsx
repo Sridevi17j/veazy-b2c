@@ -2,9 +2,14 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Header from '@/components/Header'
 import VisaDetails from '@/components/VisaDetails'
-import ChatInterface from '@/components/ChatInterface'
+
+const ChatInterface = dynamic(() => import('@/components/ChatInterface'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse">Loading chat...</div>
+})
 
 function VisaApplicationContent() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');

@@ -59,12 +59,14 @@ async def check_rate_limit(phone_number: str) -> bool:
     return True
 
 # Dependency for authenticated routes
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
-    """Get current authenticated user from JWT token"""
-    if not credentials:
+async def get_current_user(request: Request) -> User:
+    """Get current authenticated user from JWT token in cookie"""
+    # Get token from cookie
+    token = request.cookies.get("auth_token")
+    if not token:
         raise HTTPException(status_code=401, detail="Authentication required")
     
-    result = jwt_service.verify_token(credentials.credentials)
+    result = jwt_service.verify_token(token)
     if not result['success']:
         raise HTTPException(status_code=401, detail=result['error'])
     
@@ -167,26 +169,13 @@ async def verify_otp(request: VerifyOTPRequest, response: Response):
                 detail=f"{error_message}. {max_attempts - user.otp_attempts} attempts remaining"
             )
         
-        # OTP is valid - mark user as verified
+        # OTP is valid - reset attempts but don't mark as fully verified yet
         user.otp_attempts = 0
-        user.verified_at = datetime.utcnow()
         user.updated_at = datetime.utcnow()
-        
-        # Generate JWT token
-        token = jwt_service.generate_token(str(user.id), user.phone)
-        user.session_token = token
         
         await user.save()
         
-        # Set httpOnly cookie
-        response.set_cookie(
-            key="auth_token",
-            value=token,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-            max_age=7 * 24 * 60 * 60  # 7 days
-        )
+        # Don't generate JWT or set cookie yet - wait for complete registration
         
         return AuthResponse(
             success=True,
@@ -242,36 +231,31 @@ async def complete_registration(request: CompleteRegistrationRequest, response: 
         # Format phone number
         full_phone = twilio_service.combine_phone_number(request.country_code, request.local_phone)
         
-        # Verify OTP with Twilio
-        verify_result = twilio_service.verify_otp(full_phone, request.otp_code)
-        
-        if not verify_result['success']:
+        # Find user that was created during /send-otp
+        existing_user = await User.find_one(User.phone == full_phone)
+        if not existing_user:
             raise HTTPException(
                 status_code=400, 
-                detail=f"OTP verification failed: {verify_result['error']}"
+                detail="Phone number not found. Please request OTP first."
             )
         
-        # Check if user already exists
-        existing_user = await User.find_one(User.phone == full_phone)
-        if existing_user and existing_user.verified_at:
+        # Check if user is already fully registered
+        if existing_user.verified_at:
             raise HTTPException(
                 status_code=400, 
                 detail="User already registered with this phone number"
             )
         
-        # Check if email is already taken
+        # Check if email is already taken by another user
         email_user = await User.find_one(User.email == request.email.lower().strip())
-        if email_user and email_user.verified_at:
+        if email_user and email_user.verified_at and email_user.id != existing_user.id:
             raise HTTPException(
                 status_code=400, 
                 detail="Email address is already registered"
             )
         
-        # Create or update user with complete profile
-        if existing_user:
-            user = existing_user
-        else:
-            user = User()
+        # Use existing user from /send-otp (already has _id)
+        user = existing_user
         
         # Set all user fields
         user.phone = full_phone
@@ -286,7 +270,7 @@ async def complete_registration(request: CompleteRegistrationRequest, response: 
         user.updated_at = datetime.utcnow()
         
         # Generate JWT token
-        token = jwt_service.generate_token(str(user.id), user.phone)
+        token = jwt_service.generate_token(str(user.id))
         user.session_token = token
         
         # Save user to database
@@ -299,7 +283,7 @@ async def complete_registration(request: CompleteRegistrationRequest, response: 
             httponly=True,
             secure=True,
             samesite="lax",
-            max_age=7 * 24 * 60 * 60  # 7 days
+            max_age=int(os.getenv('JWT_EXPIRY_DAYS', 30)) * 24 * 60 * 60  # Uses JWT_EXPIRY_DAYS env var
         )
         
         return AuthResponse(

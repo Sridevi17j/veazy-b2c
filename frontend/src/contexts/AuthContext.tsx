@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 
 interface User {
   id: string;
@@ -26,7 +26,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const checkAuth = async (): Promise<boolean> => {
+  const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch('http://localhost:8000/api/auth/session', {
       // const response = await fetch('https://veazy-backend.onrender.com/api/auth/session', {
@@ -54,13 +54,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       return false;
     }
-  };
+  }, []);
 
   const login = (userData: User) => {
     setUser(userData);
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await fetch('http://localhost:8000/api/auth/logout', {
       // await fetch('https://veazy-backend.onrender.com/api/auth/logout', {
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setUser(null);
     }
-  };
+  }, []);
 
   // Check authentication on mount
   useEffect(() => {
@@ -86,16 +86,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     initAuth();
-  }, []);
+  }, [checkAuth]);
 
-  const value: AuthContextType = {
+  const value: AuthContextType = useMemo(() => ({
     user,
     isAuthenticated: !!user,
     isLoading,
     login,
     logout,
     checkAuth,
-  };
+  }), [user, isLoading, logout, checkAuth]);
 
   return (
     <AuthContext.Provider value={value}>

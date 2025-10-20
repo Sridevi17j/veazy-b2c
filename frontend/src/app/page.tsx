@@ -7,7 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import NewHero from '@/components/NewHero';
 import { Features } from '@/components/Features';
 import { HowItWorks } from '@/components/HowItWorks';
-import { Stats } from '@/components/Stats';
+import { Benefits } from '@/components/Benefits';
 import { Testimonials } from '@/components/Testimonials';
 import { CTA } from '@/components/CTA';
 import { Footer } from '@/components/Footer';
@@ -87,7 +87,7 @@ export default function LandingPage() {
       
       <Features />
       <HowItWorks />
-      <Stats />
+      <Benefits />
       <Testimonials />
       <CTA onChatOpen={handleChatOpen} />
       <Footer />

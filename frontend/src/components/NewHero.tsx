@@ -58,88 +58,99 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
   // Don't render the date pickers until today is set to avoid hydration mismatch
   if (!today) {
     return (
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        {/* Floating orbs */}
-        <div className="absolute top-20 right-[10%] w-64 h-64 bg-primary/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-[5%] w-80 h-80 bg-accent/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-40 left-[60%] w-48 h-48 bg-purple-400/20 rounded-full blur-3xl"></div>
+      <section className="relative overflow-hidden py-20 lg:py-32">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/5 to-green-600/10"></div>
 
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left side - Content */}
-            <div className="relative z-10">
-              <Badge variant="outline" className="mb-4 border-primary/30 text-primary">
+            <div className="text-center lg:text-left">
+              <Badge variant="outline" className="inline-flex items-center space-x-1 bg-blue-100 text-blue-800 mb-6 border-transparent">
                 ✨ AI-Powered Visa Magic
               </Badge>
               
-              <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
                 Get Your Visa{" "}
                 <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Automagically</span>
               </h1>
               
-              <p className="text-lg text-muted-foreground mb-8 max-w-lg">
+              <p className="text-xl text-gray-600 mb-8 max-w-2xl">
                 Chat with our friendly AI visa expert who understands your unique situation. 
                 Skip the government sites, avoid the paperwork hassle, and watch your visa 
                 application happen in real-time like magic! ✨
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Button size="lg" className="group" onClick={onChatOpen}>
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-4" onClick={onChatOpen}>
                   <MessageCircle className="mr-2 h-5 w-5" />
                   Start Chatting Now
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button size="lg" variant="outline">
-                  See How It Works
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
 
-              <div className="flex flex-wrap gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-success rounded-full"></div>
-                  <span className="text-muted-foreground">No government sites</span>
+              <div className="flex items-center justify-center lg:justify-start space-x-8 text-sm text-gray-600">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>No government sites</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-success rounded-full"></div>
-                  <span className="text-muted-foreground">Real-time tracking</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>Real-time tracking</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-success rounded-full"></div>
-                  <span className="text-muted-foreground">Human-like AI</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>Human-like AI</span>
                 </div>
               </div>
             </div>
 
-            {/* Right side - Form */}
-            <div className="relative z-10">
-              <div className="bg-card rounded-2xl shadow-hover p-6 border border-border">
-                <h3 className="text-lg font-semibold mb-4 text-center">Plan Your Journey</h3>
+            {/* Right side - Form with 4 dropdowns */}
+            <div className="relative">
+              <div className="relative bg-white rounded-2xl shadow-2xl p-8 mx-auto max-w-md">
+                <div className="absolute -top-4 -left-4 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-white" />
+                </div>
                 <form className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="block text-xs text-muted-foreground mb-1 font-medium">Destination</label>
-                    <div className="w-full p-3 text-sm border border-input rounded-lg bg-background animate-pulse">
-                      Loading...
+                    <div className="w-full p-3 text-sm border border-input rounded-lg bg-background">
+                      <div className="flex items-center justify-between">
+                        <span className="text-foreground">Vietnam</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1 font-medium">Departure Date</label>
-                    <div className="w-full p-3 text-sm border border-input rounded-lg bg-background animate-pulse">
-                      Loading...
+                    <div className="w-full p-3 text-sm border border-input rounded-lg bg-background">
+                      <span className="text-foreground">10/18/2025</span>
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1 font-medium">Return Date</label>
-                    <div className="w-full p-3 text-sm border border-input rounded-lg bg-background animate-pulse">
-                      Loading...
+                    <div className="w-full p-3 text-sm border border-input rounded-lg bg-background">
+                      <span className="text-foreground">10/18/2025</span>
                     </div>
                   </div>
                   <div className="col-span-2">
                     <label className="block text-xs text-muted-foreground mb-1 font-medium">Purpose of travel</label>
-                    <div className="w-full p-3 text-sm border border-input rounded-lg bg-background animate-pulse">
-                      Loading...
+                    <div className="w-full p-3 text-sm border border-input rounded-lg bg-background">
+                      <div className="flex items-center justify-between">
+                        <span className="text-foreground">Tourism</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </form>
+                
+                {/* Floating decorative elements */}
+                <div className="absolute -top-8 -right-8 w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full opacity-20 animate-bounce"></div>
+                <div className="absolute -bottom-8 -left-8 w-12 h-12 bg-gradient-to-br from-green-400 to-blue-400 rounded-full opacity-20 animate-pulse"></div>
               </div>
             </div>
           </div>
@@ -270,9 +281,6 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
                 <MessageCircle className="mr-2 h-5 w-5" />
                 Start Chatting Now
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-4">
-                See How It Works
               </Button>
             </div>
 

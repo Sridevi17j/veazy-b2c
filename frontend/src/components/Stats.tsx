@@ -23,28 +23,6 @@ export const Stats = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5"></div>
       
       <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
-            Why Travelers Love Veazy
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Join thousands of happy travelers who've discovered the magic of stress-free visa applications
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          {benefits.map((benefit, index) => (
-            <Card key={index} className="border-border hover:shadow-hover transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="text-4xl md:text-5xl font-bold gradient-text mb-2">
-                  {benefit.stat}
-                </div>
-                <h3 className="text-xl font-semibold mb-3">{benefit.label}</h3>
-                <p className="text-sm text-muted-foreground">{benefit.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {quickStats.map((stat, index) => (

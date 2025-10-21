@@ -38,6 +38,10 @@ class AuthResponse(BaseModel):
     message: str
     user_id: Optional[str] = None
     phone_number: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    preferred_name: Optional[str] = None
 
 class CountryCodeResponse(BaseModel):
     code: str
@@ -196,7 +200,11 @@ async def check_session(current_user: User = Depends(get_current_user)):
         success=True,
         message="Valid session",
         user_id=str(current_user.id),
-        phone_number=current_user.phone
+        phone_number=current_user.phone,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        email=current_user.email,
+        preferred_name=current_user.preferred_name
     )
 
 @router.post("/logout")

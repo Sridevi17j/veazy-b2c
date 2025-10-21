@@ -13,10 +13,6 @@ import { CTA } from '@/components/CTA';
 import { Footer } from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 
-const ChatInterface = dynamic(() => import('@/components/ChatInterface'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse">Loading chat...</div>
-});
 
 const AuthModal = dynamic(() => import('@/components/AuthModal'), {
   ssr: false,
@@ -27,44 +23,37 @@ export default function LandingPage() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>('');
   const [selectedPurpose, setSelectedPurpose] = useState<string>('');
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
 
   const handleChatOpen = () => {
     if (isAuthenticated) {
-      setIsChatOpen(true);
+      router.push('/visa-assistant');
     } else {
       setIsAuthOpen(true);
     }
   };
 
-  const handleChatClose = () => {
-    setIsChatOpen(false);
-  };
-
   const handleAuthSuccess = () => {
     setIsAuthOpen(false);
-    setIsChatOpen(true);
+    router.push('/visa-assistant');
   };
 
   const handleAuthClose = () => {
     setIsAuthOpen(false);
   };
 
-  // Redirect to application page when both country and purpose are selected
+  // Redirect to visa information page with SEO-friendly URL when form is completed
   useEffect(() => {
     if (selectedCountry && selectedPurpose && selectedCountryCode) {
       // Add a small delay for better UX (user can see their selection)
       setTimeout(() => {
-        // Pass the selected data via URL params to the application page
-        const params = new URLSearchParams({
-          country: selectedCountry,
-          countryCode: selectedCountryCode,
-          purpose: selectedPurpose
-        });
-        router.push(`/veazy?${params.toString()}`);
+        // Create SEO-friendly URL slugs for information page
+        const countrySlug = selectedCountry.toLowerCase().replace(/\s+/g, '-');
+        const purposeSlug = selectedPurpose.toLowerCase().replace(/\s+/g, '-') + '-visa';
+        
+        router.push(`/${countrySlug}/${purposeSlug}`);
       }, 800); // 800ms delay for better user experience
     }
   }, [selectedCountry, selectedCountryCode, selectedPurpose, router]);
@@ -92,10 +81,6 @@ export default function LandingPage() {
       <CTA onChatOpen={handleChatOpen} />
       <Footer />
 
-      <ChatInterface 
-        isOpen={isChatOpen} 
-        onClose={handleChatClose}
-      />
 
       <AuthModal
         isOpen={isAuthOpen}

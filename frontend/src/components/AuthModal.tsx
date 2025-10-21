@@ -39,8 +39,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/send-otp', {
-      // const response = await fetch('https://veazy-backend.onrender.com/api/auth/send-otp', {
+      // const response = await fetch('http://localhost:8000/api/auth/send-otp', {
+      const response = await fetch('https://veazy-backend.onrender.com/api/auth/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/verify-otp', {
+      const response = await fetch('https://veazy-backend.onrender.com/api/auth/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,8 +122,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     try {
       const completeUserData = { ...userData, preferredName };
       
-      const response = await fetch('http://localhost:8000/api/auth/complete-registration', {
-      // const response = await fetch('https://veazy-backend.onrender.com/api/auth/complete-registration', {
+      // const response = await fetch('http://localhost:8000/api/auth/complete-registration', {
+      const response = await fetch('https://veazy-backend.onrender.com/api/auth/complete-registration', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

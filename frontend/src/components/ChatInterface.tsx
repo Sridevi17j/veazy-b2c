@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import ChatMessage from './ChatMessage';
 import TypingIndicator from './TypingIndicator';
 
@@ -11,20 +13,31 @@ interface Message {
   timestamp: Date;
 }
 
+interface ChatContext {
+  country: string;
+  purpose: string;
+  date: string;
+}
+
 interface ChatInterfaceProps {
   isOpen: boolean;
   onClose: () => void;
+  initialContext?: ChatContext | null;
 }
 
-export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
+export default function ChatInterface({ isOpen, onClose, initialContext }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
-  const BACKEND_URL = 'http://localhost:8000';
-  // const BACKEND_URL = 'https://veazy-backend.onrender.com';
+  // const BACKEND_URL = 'http://localhost:8000';
+  const BACKEND_URL = 'https://veazy-backend.onrender.com';
 
   // Create thread when chat opens
   useEffect(() => {
@@ -230,10 +243,55 @@ export default function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
                 Visa Genie
               </div>
             </div>
-            <div className="flex items-center space-x-6 mobile-hidden">
-              <button className="text-sm text-gray-600 hover:text-gray-900">How it Works</button>
-              <button className="text-sm text-gray-600 hover:text-gray-900">About Us</button>
-              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">Sign Up</button>
+            <div className="flex items-center space-x-4 mobile-hidden">
+              {/* User Profile Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <svg className={`w-4 h-4 transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {isUserDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          router.push('/account/profile');
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span>My Account</span>
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await logout();
+                          router.push('/');
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

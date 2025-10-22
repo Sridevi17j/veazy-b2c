@@ -184,8 +184,8 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
     
     setCountriesLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/countries/supported'); // Local development
-      // const response = await fetch('https://veazy-backend.onrender.com/api/countries/supported');
+      // const response = await fetch('http://localhost:8000/api/countries/supported'); // Local development
+      const response = await fetch('https://veazy-backend.onrender.com/api/countries/supported');
       if (!response.ok) {
         throw new Error('Failed to fetch countries');
       }

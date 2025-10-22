@@ -42,6 +42,7 @@ class AuthResponse(BaseModel):
     last_name: Optional[str] = None
     email: Optional[str] = None
     preferred_name: Optional[str] = None
+    token: Optional[str] = None
 
 class CountryCodeResponse(BaseModel):
     code: str
@@ -63,13 +64,12 @@ async def check_rate_limit(phone_number: str) -> bool:
     return True
 
 # Dependency for authenticated routes
-async def get_current_user(request: Request) -> User:
-    """Get current authenticated user from JWT token in cookie"""
-    # Get token from cookie
-    token = request.cookies.get("auth_token")
-    if not token:
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+    """Get current authenticated user from JWT token in Authorization header"""
+    if not credentials:
         raise HTTPException(status_code=401, detail="Authentication required")
     
+    token = credentials.credentials
     result = jwt_service.verify_token(token)
     if not result['success']:
         raise HTTPException(status_code=401, detail=result['error'])
@@ -208,14 +208,11 @@ async def check_session(current_user: User = Depends(get_current_user)):
     )
 
 @router.post("/logout")
-async def logout(response: Response, current_user: User = Depends(get_current_user)):
+async def logout(current_user: User = Depends(get_current_user)):
     """Logout user by clearing session"""
     # Clear session token in database
     current_user.session_token = None
     await current_user.save()
-    
-    # Clear cookie
-    response.delete_cookie("auth_token")
     
     return {"success": True, "message": "Logged out successfully"}
 
@@ -284,21 +281,17 @@ async def complete_registration(request: CompleteRegistrationRequest, response: 
         # Save user to database
         await user.save()
         
-        # Set httpOnly cookie
-        response.set_cookie(
-            key="auth_token",
-            value=token,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-            max_age=int(os.getenv('JWT_EXPIRY_DAYS', 30)) * 24 * 60 * 60  # Uses JWT_EXPIRY_DAYS env var
-        )
-        
+        # Return token in response instead of setting cookie
         return AuthResponse(
             success=True,
             message=f"Registration completed successfully! Welcome, {user.first_name}!",
             user_id=str(user.id),
-            phone_number=user.phone
+            phone_number=user.phone,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            preferred_name=user.preferred_name,
+            token=token
         )
         
     except HTTPException:

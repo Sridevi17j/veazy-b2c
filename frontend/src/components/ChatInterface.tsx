@@ -33,11 +33,11 @@ export default function ChatInterface({ isOpen, onClose, initialContext }: ChatI
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   
-  const { user, logout } = useAuth();
+  const { user, logout, getAuthHeaders } = useAuth();
   const router = useRouter();
 
-  // const BACKEND_URL = 'http://localhost:8000';
-  const BACKEND_URL = 'https://veazy-backend.onrender.com';
+  const BACKEND_URL = 'http://localhost:8000';
+  // const BACKEND_URL = 'https://veazy-backend.onrender.com';
 
   // Create thread when chat opens
   useEffect(() => {
@@ -50,9 +50,7 @@ export default function ChatInterface({ isOpen, onClose, initialContext }: ChatI
     try {
       const response = await fetch(`${BACKEND_URL}/threads`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -86,9 +84,7 @@ export default function ChatInterface({ isOpen, onClose, initialContext }: ChatI
     try {
       const response = await fetch(`${BACKEND_URL}/threads/${threadId}/runs/stream`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           input: {
             messages: [{ content: messageToSend }]

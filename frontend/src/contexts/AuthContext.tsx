@@ -15,9 +15,10 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (user: User) => void;
+  login: (user: User, token: string) => void;
   logout: () => void;
   checkAuth: () => Promise<boolean>;
+  getAuthHeaders: () => { [key: string]: string };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,14 +31,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper function to get stored token
+  const getStoredToken = (): string | null => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('auth_token');
+    }
+    return null;
+  };
+
+  // Helper function to store token
+  const storeToken = (token: string): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth_token', token);
+    }
+  };
+
+  // Helper function to remove token
+  const removeToken = (): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+    }
+  };
+
+  // Helper function to get auth headers
+  const getAuthHeaders = (): { [key: string]: string } => {
+    const token = getStoredToken();
+    const headers: { [key: string]: string } = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+  };
+
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
-      // const response = await fetch('http://localhost:8000/api/auth/session', {
-      const response = await fetch('https://veazy-backend.onrender.com/api/auth/session', {
-        credentials: 'include', // Include cookies
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const token = getStoredToken();
+      if (!token) {
+        setUser(null);
+        return false;
+      }
+
+      const response = await fetch('http://localhost:8000/api/auth/session', {
+      // const response = await fetch('https://veazy-backend.onrender.com/api/auth/session', {
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -69,23 +109,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  const login = (userData: User) => {
+  const login = (userData: User, token: string) => {
     setUser(userData);
+    storeToken(token);
   };
 
   const logout = useCallback(async () => {
     try {
-      // await fetch('http://localhost:8000/api/auth/logout', {
-      await fetch('https://veazy-backend.onrender.com/api/auth/logout', {
+      await fetch('http://localhost:8000/api/auth/logout', {
+      // await fetch('https://veazy-backend.onrender.com/api/auth/logout', {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       });
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
+      removeToken();
       setUser(null);
     }
   }, []);
@@ -108,6 +147,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     checkAuth,
+    getAuthHeaders,
   }), [user, isLoading, logout, checkAuth]);
 
   return (

@@ -75,8 +75,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return false;
       }
 
-      const response = await fetch('http://localhost:8000/api/auth/session', {
-      // const response = await fetch('https://veazy-backend.onrender.com/api/auth/session', {
+      // const response = await fetch('http://localhost:8000/api/auth/session', {
+      const response = await fetch('https://veazy-backend.onrender.com/api/auth/session', {
         headers: getAuthHeaders(),
       });
 
@@ -116,8 +116,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch('http://localhost:8000/api/auth/logout', {
-      // await fetch('https://veazy-backend.onrender.com/api/auth/logout', {
+      // await fetch('http://localhost:8000/api/auth/logout', {
+      await fetch('https://veazy-backend.onrender.com/api/auth/logout', {
         method: 'POST',
         headers: getAuthHeaders(),
       });

@@ -26,6 +26,7 @@ class AgentState(TypedDict):
     
     # Initial basic information collection
     initial_info: Optional[dict[str, Any]]  # {"country": "thailand", "purpose_of_travel": "tourism", "number_of_travelers": 2, "travel_dates": "24/01/26 to 02/02/26"}
+    country_code: Optional[str]  # ISO country code from database lookup (e.g., "VNM", "THA")
     
     # Detailed visa application data (accumulated via tools)
     personal_info: Annotated[list[dict[str, Any]], add]        # Name, DOB, nationality, address, phone, email

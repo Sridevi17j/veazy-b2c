@@ -13,7 +13,8 @@ from config.settings import llm, stream_llm_safe, app_config
 from tools.greetings import greetings_tool
 from tools.visa_information import general_enquiry_tool  
 from tools.application_basic import base_information_collector_tool
-from tools.visa_type_analyzer import visa_type_analyzer_tool
+from tools.database_visa_lookup import database_visa_lookup_tool
+from tools.workflow_executor import workflow_executor_tool
 from tools.application_detailed import application_detailed_tool
 from tools.document_processing import document_processing_tool
 from tools.session_management import session_management_tool
@@ -31,15 +32,17 @@ class VisaAssistantAgent:
         
     def _initialize_tools(self) -> List:
         """Initialize all available tools for the agent"""
-        return [
+        tools = [
             greetings_tool,
             general_enquiry_tool,
             base_information_collector_tool,
-            visa_type_analyzer_tool,
+            database_visa_lookup_tool,
+            workflow_executor_tool,
             application_detailed_tool,
             document_processing_tool,
             session_management_tool
         ]
+        return tools
     
     def _create_agent(self):
         """Create the React Agent with custom state and prompt"""
@@ -103,7 +106,6 @@ class VisaAssistantAgent:
         try:
             # Prepare state
             state = self._prepare_state(input_data)
-            
             # Stream with messages mode for token-level streaming (following LangGraph docs)
             async for message_chunk, metadata in self.agent.astream(state, stream_mode="messages"):
                 processed_chunk = self._process_message_chunk(message_chunk, metadata)
@@ -125,6 +127,13 @@ class VisaAssistantAgent:
             "tool_call_count": 0,
             "state_version": 1
         })
+        
+        # DEBUG: Check what messages the agent receives
+        print(f"DEBUG AGENT: Agent will process {len(state['messages'])} messages:")
+        for i, msg in enumerate(state['messages']):
+            msg_type = getattr(msg, 'type', 'unknown')
+            content_preview = str(getattr(msg, 'content', ''))[:50]
+            print(f"  {i}: {msg_type} - {content_preview}...")
         
         # Merge additional state fields if provided
         for key, value in input_data.items():

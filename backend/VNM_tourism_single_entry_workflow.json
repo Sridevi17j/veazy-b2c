@@ -1,0 +1,270 @@
+{
+  "_id": "VNM_tourism_single_entry",
+  "country_code": "VNM",
+  "country_name": "Vietnam", 
+  "visa_type": "Vietnam Tourism Single Entry",
+  "visa_code": "DL-SE",
+  "version": "1.0",
+  "created_at": "2025-10-25T06:00:00.000Z",
+  "updated_at": "2025-10-25T06:00:00.000Z",
+  
+  "collection_sequence": [
+    {
+      "stage": "documents",
+      "stage_title": "Document Collection",
+      "required_documents": [
+        {
+          "type": "passport_bio_page",
+          "name": "Passport Bio Page",
+          "description": "Clear scan/photo of passport bio page",
+          "required": true,
+          "extracts": [
+            "surname",
+            "givenName", 
+            "dateOfBirth",
+            "gender",
+            "nationality",
+            "placeOfBirth",
+            "passportNumber",
+            "passportType",
+            "passportIssuingCountry", 
+            "passportIssueDate",
+            "passportExpiryDate"
+          ]
+        },
+        {
+          "type": "passport_photo",
+          "name": "Passport Size Photo", 
+          "description": "Recent passport-sized photograph with white background",
+          "required": true,
+          "extracts": []
+        }
+      ]
+    },
+    {
+      "stage": "personal_info",
+      "stage_title": "Personal Information",
+      "fields": {
+        "religion": {
+          "extraction_method": "ai_derive_from_name",
+          "required": true,
+          "field_type": "text",
+          "instruction": "Derive from Name using AI"
+        },
+        "maritalStatus": {
+          "extraction_method": "user_input", 
+          "required": false,
+          "field_type": "select",
+          "options": ["Single", "Married", "Divorced", "Widowed"]
+        }
+      }
+    },
+    {
+      "stage": "contact_info",
+      "stage_title": "Contact Information", 
+      "fields": {
+        "email": {
+          "extraction_method": "user_account",
+          "required": true,
+          "field_type": "email"
+        },
+        "phoneNumber": {
+          "extraction_method": "user_account",
+          "required": true,
+          "field_type": "tel"
+        },
+        "permanentAddress": {
+          "extraction_method": "user_input_or_passport",
+          "required": true,
+          "field_type": "address_group",
+          "sub_fields": {
+            "streetAddress": {
+              "required": true,
+              "field_type": "text"
+            },
+            "city": {
+              "required": true,
+              "field_type": "text"
+            },
+            "state": {
+              "required": true, 
+              "field_type": "text"
+            },
+            "zipCode": {
+              "required": true,
+              "field_type": "text"
+            },
+            "country": {
+              "required": true,
+              "field_type": "text",
+              "extraction_method": "passport_bio_page"
+            }
+          }
+        }
+      }
+    },
+    {
+      "stage": "occupation_info",
+      "stage_title": "Occupation Information",
+      "fields": {
+        "occupation": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Employee", "Businessman", "Official", "Student", "Retired", "Unemployed", "Others"]
+        },
+        "employerName": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "text"
+        },
+        "jobTitle": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "text"
+        },
+        "employerAddress": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "address_group",
+          "sub_fields": {
+            "streetAddress": {
+              "required": true,
+              "field_type": "text"
+            }
+          }
+        },
+        "employerPhoneNumber": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "tel"
+        }
+      }
+    },
+    {
+      "stage": "travel_info",
+      "stage_title": "Travel Information",
+      "fields": {
+        "purposeOfVisit": {
+          "extraction_method": "visa_type_selected",
+          "required": true,
+          "field_type": "text",
+          "default_value": "Tourist"
+        },
+        "intendedEntryDate": {
+          "extraction_method": "flight_tickets_or_user_input",
+          "required": true,
+          "field_type": "date"
+        },
+        "intendedExitDate": {
+          "extraction_method": "flight_tickets_or_user_input", 
+          "required": true,
+          "field_type": "date"
+        },
+        "expectedLengthOfStay": {
+          "extraction_method": "flight_tickets_or_user_input",
+          "required": true,
+          "field_type": "number"
+        },
+        "residentialAddressVietnam": {
+          "extraction_method": "hotel_reservation_or_user_input",
+          "required": true,
+          "field_type": "text"
+        },
+        "provinceCity": {
+          "extraction_method": "hotel_reservation_or_user_input",
+          "required": true,
+          "field_type": "text"
+        },
+        "wardCommune": {
+          "extraction_method": "hotel_reservation_or_user_input",
+          "required": true, 
+          "field_type": "text"
+        },
+        "entryBorderGate": {
+          "extraction_method": "flight_tickets_or_user_input",
+          "required": true,
+          "field_type": "text"
+        },
+        "exitBorderGate": {
+          "extraction_method": "flight_tickets_or_user_input",
+          "required": true,
+          "field_type": "text"
+        }
+      }
+    },
+    {
+      "stage": "emergency_contact",
+      "stage_title": "Emergency Contact Information",
+      "fields": {
+        "emergencyContact": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "contact_group",
+          "sub_fields": {
+            "fullName": {
+              "required": true,
+              "field_type": "text"
+            },
+            "relationship": {
+              "required": true,
+              "field_type": "text"
+            },
+            "phoneNumber": {
+              "required": true,
+              "field_type": "tel"
+            },
+            "address": {
+              "required": true,
+              "field_type": "address_group",
+              "sub_fields": {
+                "streetAddress": {
+                  "required": true,
+                  "field_type": "text"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "stage": "financial_info",
+      "stage_title": "Financial Information",
+      "fields": {
+        "estimatedTripExpenses": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "number",
+          "note": "Pending implementation"
+        },
+        "haveHealthInsurance": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "boolean",
+          "note": "Pending implementation"
+        },
+        "tripExpensesCoveredBy": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Personal", "Company"]
+        }
+      }
+    }
+  ],
+  
+  "default_values": {
+    "previousVisitsToVietnam": "No",
+    "haveRelativesInVietnam": "No",
+    "criminalRecordStatus": "No", 
+    "deportationHistory": "No",
+    "multipleNationalities": "No",
+    "otherValidPassports": "No",
+    "violationVietnameseLaws": "No",
+    "contactAgencyInVietnam": "No",
+    "visaType": "Single Entry"
+  },
+  
+  "total_stages": 7
+}

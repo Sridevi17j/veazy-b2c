@@ -36,8 +36,8 @@ export default function ChatInterface({ isOpen, onClose, initialContext }: ChatI
   const { user, logout, getAuthHeaders } = useAuth();
   const router = useRouter();
 
-  // const BACKEND_URL = 'http://localhost:8000';
-  const BACKEND_URL = 'https://veazy-backend.onrender.com';
+  const BACKEND_URL = 'http://localhost:8000';
+  // const BACKEND_URL = 'https://veazy-backend.onrender.com';
 
   // Create thread when chat opens
   useEffect(() => {

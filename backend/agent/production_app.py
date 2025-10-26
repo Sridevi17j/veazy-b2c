@@ -57,12 +57,12 @@ def _extract_clean_content(content) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("🔄 Initializing database connection...")
+    print("Initializing database connection...")
     await init_db()
-    print("✅ Agent-based Visa Assistant Production Server initialized")
+    print("Agent-based Visa Assistant Production Server initialized")
     yield
     # Shutdown
-    print("🔄 Server shutdown")
+    print("Server shutdown")
 
 app = FastAPI(
     title="Agent-based Visa Agent API",
@@ -143,6 +143,13 @@ async def run_thread(thread_id: str, request: MessageRequest):
         user_msg = HumanMessage(content=user_message)
         current_state["messages"].append(user_msg)
         
+        # DEBUG: Check what messages the agent will see
+        print(f"DEBUG: Agent will see {len(current_state['messages'])} messages:")
+        for i, msg in enumerate(current_state['messages']):
+            msg_type = getattr(msg, 'type', 'unknown')
+            content_preview = str(getattr(msg, 'content', ''))[:50]
+            print(f"  {i}: {msg_type} - {content_preview}...")
+        
         # Prepare input for agent
         agent_input = {
             "messages": current_state["messages"],
@@ -159,18 +166,19 @@ async def run_thread(thread_id: str, request: MessageRequest):
         # Run the agent
         result = invoke_agent(agent_input)
         
+        # DEBUG: Check what tools were called
+        if "messages" in result and result["messages"]:
+            ai_messages = [msg for msg in result["messages"] if hasattr(msg, 'type') and msg.type == 'ai']
+            for ai_msg in ai_messages:
+                if hasattr(ai_msg, 'tool_calls') and ai_msg.tool_calls:
+                    for tool_call in ai_msg.tool_calls:
+                        print(f"DEBUG: Agent called tool: {tool_call['name']}")
+        
         # Update thread state with result
         thread_states[thread_id].update(result)
         
         # Extract response messages - handle both message objects and direct responses
         response_messages = []
-        
-        # Debug: Print what we got from agent
-        print(f"Agent result keys: {result.keys()}")
-        if "messages" in result:
-            print(f"Messages type: {type(result['messages'])}")
-            if result["messages"]:
-                print(f"First message type: {type(result['messages'][-1])}")
         
         if "messages" in result and result["messages"]:
             # Get the last AI message
@@ -202,7 +210,7 @@ async def run_thread(thread_id: str, request: MessageRequest):
         return RunResponse(messages=response_messages)
         
     except Exception as e:
-        print(f"❌ Error in run_thread: {e}")
+        print(f"Error in run_thread: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/threads/{thread_id}/state")
@@ -257,6 +265,13 @@ async def stream_run(thread_id: str, request: dict):
         user_msg = HumanMessage(content=user_message)
         current_state["messages"].append(user_msg)
         
+        # DEBUG: Check what messages the agent will see (STREAMING)
+        print(f"DEBUG STREAM: Agent will see {len(current_state['messages'])} messages:")
+        for i, msg in enumerate(current_state['messages']):
+            msg_type = getattr(msg, 'type', 'unknown')
+            content_preview = str(getattr(msg, 'content', ''))[:50]
+            print(f"  {i}: {msg_type} - {content_preview}...")
+        
         async def generate_stream():
             print(f"Starting agent stream for thread {thread_id}, message: {user_message}")
             
@@ -283,16 +298,26 @@ async def stream_run(thread_id: str, request: dict):
                     agent_input[key] = value
             
             # Stream the AI response using agent streaming
+            full_ai_response = ""
             try:
                 async for chunk in stream_agent(agent_input):
                     if chunk and chunk.get("type") == "token":
+                        token_content = chunk.get("token", "")
+                        full_ai_response += token_content
                         ai_message_obj = {
-                            "id": f"ai_{thread_id}_{chunk.get('token', '')[:10]}",
+                            "id": f"ai_{thread_id}_{token_content[:10]}",
                             "type": "ai", 
-                            "content": chunk["token"],
+                            "content": token_content,
                             "created_at": "2025-01-01T00:00:00Z"
                         }
                         yield f"data: {json.dumps(ai_message_obj)}\n\n"
+                
+                # CRITICAL FIX: Save the complete AI response to thread state
+                if full_ai_response.strip():
+                    from langchain_core.messages import AIMessage
+                    ai_msg = AIMessage(content=full_ai_response.strip())
+                    current_state["messages"].append(ai_msg)
+                    print(f"DEBUG: Saved AI response to thread state: {full_ai_response[:50]}...")
                         
             except Exception as stream_error:
                 print(f"Streaming error: {stream_error}")

@@ -1,0 +1,351 @@
+{
+  "_id": {
+    "$oid": "68dd55c3a1bfcf9a24e14d9e"
+  },
+  "country_code": "VNM",
+  "country_name": "Vietnam",
+  "created_at": {
+    "$date": "2025-10-01T16:24:35.953Z"
+  },
+  "default_suggestion": "Vietnam Tourism Single Entry",
+  "rules": [
+    {
+      "visa_type": "Vietnam Tourism Single Entry",
+      "visa_code": "DL-SE",
+      "priority": 1,
+      "criteria": {
+        "purpose": [
+          "tourism",
+          "leisure",
+          "vacation",
+          "sightseeing",
+          "holiday"
+        ],
+        "max_days": 30,
+        "min_travellers": 1,
+        "max_travellers": 10
+      },
+      "match_weights": {
+        "purpose_exact": 1,
+        "purpose_partial": 0.8,
+        "traveller_count": 0.9
+      },
+      "visa_details": {
+        "stay_duration": "Up to 30 days",
+        "validity_period": "30 days",
+        "entry_type": "Single Entry Only",
+        "processing_time": "3-5 business days",
+        "fee_range": "$25-75",
+        "description": "Perfect for tourism, leisure, vacation purposes"
+      },
+      "document_requirements": [
+        {
+          "name": "Passport",
+          "description": "A valid passport with minimum of 6 months validity from the date of return. Ensure at least 2 blank pages for visa stamping.",
+          "required": true,
+          "category": "identity",
+          "notes": null
+        },
+        {
+          "name": "Flight Tickets",
+          "description": "Round-trip flight tickets showing entry and exit from the country. Dummy tickets are accepted in some cases.",
+          "required": true,
+          "category": "travel",
+          "notes": null
+        },
+        {
+          "name": "Hotel Booking",
+          "description": "Confirmed hotel reservations or accommodation proof for the duration of stay.",
+          "required": true,
+          "category": "accommodation",
+          "notes": null
+        },
+        {
+          "name": "Passport Photos",
+          "description": "2 recent passport-sized photographs with white background.",
+          "required": true,
+          "category": "identity",
+          "notes": null
+        }
+      ],
+      "approval_process": [
+        {
+          "step_number": 1,
+          "title": "Application Processing",
+          "description": "Application review and document verification",
+          "estimated_time": "1-3 days"
+        },
+        {
+          "step_number": 2,
+          "title": "Approval Letter Issued",
+          "description": "Visa approval notification sent via email",
+          "estimated_time": "1 day"
+        },
+        {
+          "step_number": 3,
+          "title": "Visa Stamping & Entry",
+          "description": "Visa stamping at embassy or on arrival",
+          "estimated_time": "Same day"
+        }
+      ]
+    },
+    {
+      "visa_type": "Vietnam Tourism Multiple Entry",
+      "visa_code": "DL-ME",
+      "priority": 2,
+      "criteria": {
+        "purpose": [
+          "tourism",
+          "leisure",
+          "vacation",
+          "sightseeing",
+          "holiday"
+        ],
+        "max_days": 90,
+        "min_travellers": 1,
+        "max_travellers": 10
+      },
+      "match_weights": {
+        "purpose_exact": 1,
+        "purpose_partial": 0.8,
+        "traveller_count": 0.9
+      },
+      "visa_details": {
+        "stay_duration": "Up to 90 days",
+        "validity_period": "90 days",
+        "entry_type": "Multiple Entry",
+        "processing_time": "5-7 business days",
+        "fee_range": "$50-120",
+        "description": "Perfect for tourism with multiple visits to Vietnam"
+      },
+      "document_requirements": [
+        {
+          "name": "Passport",
+          "description": "A valid passport with minimum of 6 months validity from the date of return. Ensure at least 2 blank pages for visa stamping.",
+          "required": true,
+          "category": "identity",
+          "notes": null
+        },
+        {
+          "name": "Flight Tickets",
+          "description": "Round-trip flight tickets showing entry and exit from the country. Dummy tickets are accepted in some cases.",
+          "required": true,
+          "category": "travel",
+          "notes": null
+        },
+        {
+          "name": "Hotel Booking",
+          "description": "Confirmed hotel reservations or accommodation proof for the duration of stay.",
+          "required": true,
+          "category": "accommodation",
+          "notes": null
+        },
+        {
+          "name": "Passport Photos",
+          "description": "2 recent passport-sized photographs with white background.",
+          "required": true,
+          "category": "identity",
+          "notes": null
+        }
+      ],
+      "approval_process": [
+        {
+          "step_number": 1,
+          "title": "Application Processing",
+          "description": "Application review and document verification",
+          "estimated_time": "1-3 days"
+        },
+        {
+          "step_number": 2,
+          "title": "Approval Letter Issued",
+          "description": "Visa approval notification sent via email",
+          "estimated_time": "1 day"
+        },
+        {
+          "step_number": 3,
+          "title": "Visa Stamping & Entry",
+          "description": "Visa stamping at embassy or on arrival",
+          "estimated_time": "Same day"
+        }
+      ]
+    },
+    {
+      "visa_type": "Vietnam Business Single Entry",
+      "visa_code": "DN-SE",
+      "priority": 3,
+      "criteria": {
+        "purpose": [
+          "business",
+          "work",
+          "meeting",
+          "conference",
+          "trade"
+        ],
+        "max_days": 90,
+        "min_travellers": 1,
+        "max_travellers": 5
+      },
+      "match_weights": {
+        "purpose_exact": 1,
+        "purpose_partial": 0.7,
+        "traveller_count": 0.8
+      },
+      "visa_details": {
+        "stay_duration": "Up to 90 days",
+        "validity_period": "90 days",
+        "entry_type": "Single Entry Only",
+        "processing_time": "5-7 business days",
+        "fee_range": "$50-150",
+        "description": "Ideal for business, work, meeting activities"
+      },
+      "document_requirements": [
+        {
+          "name": "Passport",
+          "description": "A valid passport with minimum of 6 months validity from the date of return. Ensure at least 2 blank pages for visa stamping.",
+          "required": true,
+          "category": "identity",
+          "notes": null
+        },
+        {
+          "name": "Business Invitation Letter",
+          "description": "Official invitation letter from the host company detailing purpose, duration and financial responsibility.",
+          "required": true,
+          "category": "business",
+          "notes": null
+        },
+        {
+          "name": "Company Registration",
+          "description": "Certificate of incorporation or business registration of your company.",
+          "required": true,
+          "category": "business",
+          "notes": null
+        },
+        {
+          "name": "Flight Tickets",
+          "description": "Round-trip flight tickets showing entry and exit from the country.",
+          "required": true,
+          "category": "travel",
+          "notes": null
+        },
+        {
+          "name": "Bank Statements",
+          "description": "Last 3 months bank statements showing sufficient funds.",
+          "required": true,
+          "category": "financial",
+          "notes": null
+        }
+      ],
+      "approval_process": [
+        {
+          "step_number": 1,
+          "title": "Application Processing",
+          "description": "Application review and document verification",
+          "estimated_time": "3-5 days"
+        },
+        {
+          "step_number": 2,
+          "title": "Approval Letter Issued",
+          "description": "Visa approval notification sent via email",
+          "estimated_time": "1 day"
+        },
+        {
+          "step_number": 3,
+          "title": "Visa Stamping & Entry",
+          "description": "Visa stamping at embassy or on arrival",
+          "estimated_time": "Same day"
+        }
+      ]
+    },
+    {
+      "visa_type": "Vietnam Business Multiple Entry",
+      "visa_code": "DN-ME",
+      "priority": 4,
+      "criteria": {
+        "purpose": [
+          "business",
+          "work",
+          "meeting",
+          "conference",
+          "trade"
+        ],
+        "max_days": 365,
+        "min_travellers": 1,
+        "max_travellers": 5
+      },
+      "match_weights": {
+        "purpose_exact": 1,
+        "purpose_partial": 0.7,
+        "traveller_count": 0.8
+      },
+      "visa_details": {
+        "stay_duration": "Up to 365 days",
+        "validity_period": "365 days",
+        "entry_type": "Multiple Entry",
+        "processing_time": "5-7 business days",
+        "fee_range": "$50-150",
+        "description": "Ideal for business, work, meeting activities with multiple visits"
+      },
+      "document_requirements": [
+        {
+          "name": "Passport",
+          "description": "A valid passport with minimum of 6 months validity from the date of return. Ensure at least 2 blank pages for visa stamping.",
+          "required": true,
+          "category": "identity",
+          "notes": null
+        },
+        {
+          "name": "Business Invitation Letter",
+          "description": "Official invitation letter from the host company detailing purpose, duration and financial responsibility.",
+          "required": true,
+          "category": "business",
+          "notes": null
+        },
+        {
+          "name": "Company Registration",
+          "description": "Certificate of incorporation or business registration of your company.",
+          "required": true,
+          "category": "business",
+          "notes": null
+        },
+        {
+          "name": "Flight Tickets",
+          "description": "Round-trip flight tickets showing entry and exit from the country.",
+          "required": true,
+          "category": "travel",
+          "notes": null
+        },
+        {
+          "name": "Bank Statements",
+          "description": "Last 3 months bank statements showing sufficient funds.",
+          "required": true,
+          "category": "financial",
+          "notes": null
+        }
+      ],
+      "approval_process": [
+        {
+          "step_number": 1,
+          "title": "Application Processing",
+          "description": "Application review and document verification",
+          "estimated_time": "3-5 days"
+        },
+        {
+          "step_number": 2,
+          "title": "Approval Letter Issued",
+          "description": "Visa approval notification sent via email",
+          "estimated_time": "1 day"
+        },
+        {
+          "step_number": 3,
+          "title": "Visa Stamping & Entry",
+          "description": "Visa stamping at embassy or on arrival",
+          "estimated_time": "Same day"
+        }
+      ]
+    }
+  ],
+  "updated_at": {
+    "$date": "2025-10-01T16:24:35.953Z"
+  },
+  "version": "2025.1"
+}

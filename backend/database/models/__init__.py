@@ -8,6 +8,7 @@ from .form_template import FormTemplate, FormFieldTemplate
 from .payment import Payment
 from .audit import AuditEvent
 from .country import Country
+from .comprehensive_visa_application import ComprehensiveVisaApplication
 
 __all__ = [
     "User",
@@ -30,5 +31,6 @@ __all__ = [
     "FormFieldTemplate",
     "Payment",
     "AuditEvent",
-    "Country"
+    "Country",
+    "ComprehensiveVisaApplication"
 ]

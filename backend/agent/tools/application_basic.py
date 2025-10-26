@@ -1,20 +1,48 @@
 # Basic application information collection tool
 # Purpose: Collect initial visa application data (country, purpose, dates, travelers)
 
+import sys
+sys.path.append('../..')
+
 from typing import Any, Dict, Optional
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
 from agent.state import AgentState, create_error_record
 from config.settings import invoke_llm_safe
+from database.models.country import Country
+
+
+async def _get_country_code_from_db(country_name: str) -> Optional[str]:
+    """Get country code from countries collection"""
+    try:
+        # Try exact match first (case insensitive)
+        country_doc = await Country.find_one(
+            {"name": {"$regex": f"^{country_name}$", "$options": "i"}}
+        )
+        if country_doc:
+            return country_doc.code
+            
+        # Try partial match if exact match fails
+        country_doc = await Country.find_one(
+            {"name": {"$regex": country_name, "$options": "i"}}
+        )
+        if country_doc:
+            return country_doc.code
+            
+        return None
+    except Exception as e:
+        print(f"Country lookup error: {e}")
+        return None
 
 
 @tool
-def base_information_collector_tool(user_message: str) -> str:
+async def base_information_collector_tool(user_message: str) -> str:
     """
     Collect basic visa application information: country, purpose, travel dates, number of travelers.
     
     Use this tool when:
-    - User wants to start a visa application
+    - User wants to start a visa application, for the first time, dont call this tool again, after collecting the basic information
+    - User says yes, check whether that yes is for starting application or yes for after recommending visa type, he says yes means you need to call the workflow_executor_tool
     - User says "I want to apply for visa"
     - User provides application details that need extraction
     - Missing basic information needs to be collected
@@ -33,9 +61,25 @@ def base_information_collector_tool(user_message: str) -> str:
         # Check what information is still missing
         missing_fields = _get_missing_basic_fields(extracted_info)
         
-        # If all basic info is collected, signal for visa type analysis
+        # If all basic info is collected, lookup country code and prepare for visa analysis
         if not missing_fields:
-            return f"Perfect! I have collected all basic information:\n- Country: {extracted_info['country']}\n- Purpose: {extracted_info['purpose_of_travel']}\n- Travelers: {extracted_info['number_of_travelers']}\n- Dates: {extracted_info['travel_dates']}\n\nNow I need to analyze the best visa type for your travel needs. Let me check what visa options are available for your {extracted_info['country']} trip."
+            # Lookup country code from database
+            country_code = await _get_country_code_from_db(extracted_info['country'])
+            
+            if not country_code:
+                return f"I couldn't find {extracted_info['country']} in our supported countries. Could you please check the country name or try a different destination?"
+            
+            # Store basic info and country code for the agent state
+            # The agent will handle state updates based on this response
+            basic_info_complete = {
+                "country": extracted_info['country'],
+                "purpose_of_travel": extracted_info['purpose_of_travel'], 
+                "number_of_travelers": extracted_info['number_of_travelers'],
+                "travel_dates": extracted_info['travel_dates'],
+                "country_code": country_code
+            }
+            
+            return f"BASIC_INFO_COMPLETE: {basic_info_complete}\n\nPerfect! I have collected all basic information:\n- Country: {extracted_info['country']}\n- Purpose: {extracted_info['purpose_of_travel']}\n- Travelers: {extracted_info['number_of_travelers']}\n- Dates: {extracted_info['travel_dates']}\n\nNow let me look up the best visa type for your {extracted_info['country']} trip from our database."
         
         # Generate question for missing information
         return _generate_missing_info_question(missing_fields, extracted_info)

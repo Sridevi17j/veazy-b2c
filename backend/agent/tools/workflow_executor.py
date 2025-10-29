@@ -6,8 +6,10 @@ sys.path.append('../..')
 
 import json
 from typing import Dict, List, Optional, Any, Literal
+from typing_extensions import Annotated
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
+from langgraph.prebuilt import InjectedState
 from config.settings import invoke_llm_safe
 from database.models.comprehensive_visa_application import ComprehensiveVisaApplication, DocumentInfo
 
@@ -59,7 +61,8 @@ class WorkflowState:
 @tool
 async def workflow_executor_tool(
     user_message: str, 
-    intent_type: str = "workflow_progress"
+    intent_type: str = "workflow_progress",
+    state: Annotated[dict, InjectedState] = None
 ) -> str:
     """
     Advanced workflow executor with state management and deviation handling.
@@ -74,34 +77,60 @@ async def workflow_executor_tool(
     """
     
     try:
-        # Get thread_id from agent context (we'll use a placeholder for now)
-        thread_id = "default_thread"  # TODO: Get from agent context
+        # Extract session_id from injected state
+        thread_id = "default_thread"  # fallback
+        if state:
+            thread_id = state.get("session_id", "default_thread")
+            print(f"DEBUG: State injected successfully: session_id={thread_id}")
+        else:
+            print(f"DEBUG: No state injected, using fallback: {thread_id}")
+            
+        print(f"DEBUG: workflow_executor_tool called with thread_id: {thread_id}, user_message: {user_message[:50]}...")
         
         # Get or create workflow state and database application
         state = _get_workflow_state(thread_id)
         
+        # Get user_id from thread state (if available)
+        user_id = _get_user_id_from_thread(thread_id)
+        print(f"DEBUG: Got user_id: {user_id} from thread: {thread_id}")
+        
         # Direct database access - ensure application exists
         db_application = await ComprehensiveVisaApplication.find_one({"thread_id": thread_id})
         if not db_application:
+            # Create new application linked to both user_id and thread_id
+            unique_app_id = f"{user_id}_{thread_id}" if user_id else thread_id
             db_application = ComprehensiveVisaApplication(
-                application_id=thread_id,  # Use thread_id as application_id for simplicity
+                application_id=unique_app_id,
                 thread_id=thread_id,
+                user_id=user_id,  # Link to user
                 visa_type=state.visa_type
             )
+            print(f"DEBUG: Creating new visa application with data: {db_application.dict()}")
             await db_application.insert()
+            print(f"SUCCESS: Created new visa application: {unique_app_id} for user: {user_id}, thread: {thread_id}")
+        else:
+            print(f"DEBUG: Found existing application: {db_application.application_id}")
         
         # Load workflow JSON if not already loaded
         if not state.workflow_json:
             state.workflow_json = await _get_workflow_json(state.visa_type)
         
         # Route based on intent type
+        print(f"DEBUG: Routing based on intent_type: {intent_type}")
         if intent_type == "deviation":
+            print("DEBUG: Handling deviation")
             return await _handle_deviation(state, user_message)
         elif intent_type == "modification":
+            print("DEBUG: Handling modification")
             return await _handle_data_modification(state, user_message)
         elif intent_type == "resume":
+            print("DEBUG: Handling resume")
             return await _resume_workflow(state)
+        elif intent_type == "document_processed":
+            print("DEBUG: Handling document_processed")
+            return await _handle_document_processed(state, user_message, thread_id)
         else:
+            print("DEBUG: Default - calling _progress_workflow")
             return await _progress_workflow(state, user_message)
             
     except Exception as e:
@@ -118,11 +147,31 @@ def _get_workflow_state(thread_id: str) -> WorkflowState:
     return workflow_states[thread_id]
 
 
+def _get_user_id_from_thread(thread_id: str) -> Optional[str]:
+    """Get user_id from thread state (from production_app.py thread_states)"""
+    try:
+        # Import here to avoid circular imports
+        import sys
+        sys.path.append('..')
+        from agent.production_app import thread_states
+        
+        thread_state = thread_states.get(thread_id, {})
+        return thread_state.get("user_id")
+    except Exception as e:
+        print(f"Could not get user_id from thread {thread_id}: {e}")
+        return None
+
+
 async def _progress_workflow(state: WorkflowState, user_message: str) -> str:
     """Progress through workflow stages based on current state"""
     
+    print(f"DEBUG: _progress_workflow called with current_stage: {state.current_stage}")
+    
     if state.current_stage == "start":
+        print("DEBUG: Current stage is 'start', calling _start_workflow")
         return await _start_workflow(state)
+    else:
+        print(f"DEBUG: Current stage is '{state.current_stage}', not 'start' - continuing with stage processing")
     
     # Check if user provided required information for current stage
     stage_complete = await _process_stage_input(state, user_message)
@@ -146,25 +195,40 @@ async def _progress_workflow(state: WorkflowState, user_message: str) -> str:
 
 async def _start_workflow(state: WorkflowState) -> str:
     """Start the workflow with Stage 1: Documents"""
+    print("DEBUG: _start_workflow called - setting current_stage to 'documents'")
     state.current_stage = "documents"
-    return await _start_stage(state, "documents")
+    print(f"DEBUG: About to call _start_stage with stage: documents")
+    result = await _start_stage(state, "documents")
+    print(f"DEBUG: _start_stage returned: {result[:100]}...")
+    return result
 
 
 async def _start_stage(state: WorkflowState, stage: WorkflowStage) -> str:
     """Start a specific workflow stage"""
     
+    print(f"DEBUG: _start_stage called with stage: {stage}")
+    
     if not state.workflow_json:
+        print("DEBUG: No workflow_json found!")
         return "Unable to load workflow configuration. Please try again."
+    
+    print(f"DEBUG: Workflow JSON loaded, has {len(state.workflow_json.get('collection_sequence', []))} stages")
     
     # Find the stage in workflow JSON
     collection_sequence = state.workflow_json.get("collection_sequence", [])
     stage_config = next((s for s in collection_sequence if s["stage"] == stage), None)
     
     if not stage_config:
+        print(f"DEBUG: Stage config for '{stage}' NOT FOUND!")
+        available_stages = [s.get("stage") for s in collection_sequence]
+        print(f"DEBUG: Available stages: {available_stages}")
         return f"Configuration for stage '{stage}' not found. Please contact support."
+    
+    print(f"DEBUG: Found stage config for '{stage}': {stage_config.get('stage_title', 'No title')}")
     
     # Generate stage-specific prompt
     stage_prompt = await _generate_stage_prompt(state, stage_config)
+    print(f"DEBUG: Generated stage prompt: {stage_prompt[:100]}...")
     return stage_prompt
 
 
@@ -174,8 +238,12 @@ async def _generate_stage_prompt(state: WorkflowState, stage_config: Dict[str, A
     stage_title = stage_config.get("stage_title", "")
     stage_name = stage_config.get("stage", "")
     
+    print(f"DEBUG: _generate_stage_prompt for stage: {stage_name}, title: {stage_title}")
+    print(f"DEBUG: Stage config keys: {list(stage_config.keys())}")
+    
     # Handle document collection stages
     if "required_documents" in stage_config:
+        print("DEBUG: This is a DOCUMENTS stage - generating document upload prompt")
         documents = stage_config["required_documents"]
         doc_list = []
         
@@ -199,6 +267,7 @@ Upload your documents one by one. I'll process each document and extract the req
     
     # Handle information collection stages
     elif "fields" in stage_config:
+        print("DEBUG: This is a FIELDS stage - generating manual input prompt")
         fields = stage_config["fields"]
         user_input_fields = []
         
@@ -341,6 +410,61 @@ async def _resume_workflow(state: WorkflowState) -> str:
     state.deviation_context = None
     
     return f"Great! Let's continue with your {state.visa_type} application. " + await _start_stage(state, state.current_stage)
+
+
+async def _handle_document_processed(state: WorkflowState, user_message: str, thread_id: str) -> str:
+    """Handle processed document data from document processing tool"""
+    
+    try:
+        # Extract JSON data from document processing tool response
+        extracted_data = _parse_extracted_data_json(user_message)
+        
+        if extracted_data:
+            # Save extracted data to database
+            await _update_stage_data(thread_id, state.current_stage, extracted_data)
+            
+            # Mark current stage as complete
+            await _mark_stage_complete(thread_id, state.current_stage)
+            
+            # Move to next stage
+            next_stage = _get_next_stage(state.current_stage)
+            state.current_stage = next_stage
+            
+            if next_stage == "complete":
+                return await _complete_workflow(state)
+            else:
+                return await _start_stage(state, next_stage)
+        else:
+            return "I couldn't process the extracted document data. Please try uploading your documents again."
+            
+    except Exception as e:
+        print(f"Error handling document processed: {e}")
+        return "There was an issue processing your document data. Please try uploading again or continue with manual information entry."
+
+
+def _parse_extracted_data_json(user_message: str) -> Optional[Dict[str, Any]]:
+    """Parse extracted data JSON from document processing tool response"""
+    
+    try:
+        # Look for EXTRACTED_DATA_JSON: pattern in the message
+        import re
+        json_pattern = r'EXTRACTED_DATA_JSON:\s*(\{.*?\})'
+        match = re.search(json_pattern, user_message, re.DOTALL)
+        
+        if match:
+            json_str = match.group(1)
+            return json.loads(json_str)
+        else:
+            # Try to find any JSON in the message
+            json_match = re.search(r'\{.*\}', user_message, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group())
+                
+        return None
+        
+    except Exception as e:
+        print(f"Error parsing extracted data JSON: {e}")
+        return None
 
 
 def _get_next_stage(current_stage: WorkflowStage) -> WorkflowStage:

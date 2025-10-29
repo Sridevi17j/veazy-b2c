@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
@@ -17,7 +17,8 @@ import sys
 sys.path.append('..')  # Add parent directory to path for imports
 from database.mongodb import init_db
 from api.countries import router as countries_router
-from api.auth import router as auth_router
+from api.auth import router as auth_router, get_current_user
+from database.models.user import User
 
 # Global state management for threads
 thread_states = {}
@@ -84,6 +85,13 @@ app.add_middleware(
 app.include_router(countries_router)
 app.include_router(auth_router)
 
+# Import and include document upload router
+try:
+    from api.document_upload import router as document_router
+    app.include_router(document_router)
+except ImportError:
+    print("Document upload router not available")
+
 # Pydantic models
 class MessageRequest(BaseModel):
     messages: List[Dict[str, Any]]
@@ -111,12 +119,13 @@ async def get_assistant(assistant_id: str):
     raise HTTPException(status_code=404, detail="Assistant not found")
 
 @app.post("/threads", response_model=ThreadResponse)
-async def create_thread():
+async def create_thread(current_user: User = Depends(get_current_user)):
     thread_id = str(uuid.uuid4())
-    # Initialize thread state
+    # Initialize thread state with user_id
     thread_states[thread_id] = {
         "messages": [],
         "session_id": thread_id,
+        "user_id": str(current_user.id),  # Store user_id in thread state
         "tool_call_count": 0,
         "state_version": 1
     }
@@ -163,8 +172,9 @@ async def run_thread(thread_id: str, request: MessageRequest):
             if key not in ["messages", "session_id", "tool_call_count", "state_version"] and value is not None:
                 agent_input[key] = value
         
-        # Run the agent
-        result = invoke_agent(agent_input)
+        # Run the agent with config containing thread_id
+        config = {"configurable": {"thread_id": thread_id}}
+        result = invoke_agent(agent_input, config)
         
         # DEBUG: Check what tools were called
         if "messages" in result and result["messages"]:
@@ -237,7 +247,7 @@ async def get_thread_state(thread_id: str):
 
 # Streaming endpoint that LangGraph React SDK expects
 @app.post("/threads/{thread_id}/runs/stream")
-async def stream_run(thread_id: str, request: dict):
+async def stream_run(thread_id: str, request: dict, current_user: User = Depends(get_current_user)):
     from fastapi.responses import StreamingResponse
     
     try:
@@ -299,8 +309,9 @@ async def stream_run(thread_id: str, request: dict):
             
             # Stream the AI response using agent streaming
             full_ai_response = ""
+            config = {"configurable": {"thread_id": thread_id}}
             try:
-                async for chunk in stream_agent(agent_input):
+                async for chunk in stream_agent(agent_input, config):
                     if chunk and chunk.get("type") == "token":
                         token_content = chunk.get("token", "")
                         full_ai_response += token_content

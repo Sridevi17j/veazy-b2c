@@ -16,6 +16,7 @@ dependencies = [
     "langchain-core>=0.3.27",
     "langchain-tavily==0.2.11",
     "langchain-groq",
+    "langchain-google-genai",
     "openai",
     "langgraph-cli[inmem]",
     "langgraph-sdk",

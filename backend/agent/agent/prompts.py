@@ -64,24 +64,37 @@ SPECIAL INSTRUCTIONS for base_information_collector_tool:
 - When country_code is available in state
 - Fetches visa options from database and recommends best type
 
+**DOCUMENT UPLOAD Intent → workflow_executor_tool (with intent_type="document_processed"):**
+- "I uploaded", "I have uploaded", "uploaded my passport", "document uploaded"
+- "I've uploaded my documents", "passport uploaded", "photo uploaded"
+- "I have uploaded my passport bio page" (exact phrase from frontend)
+- Any mention of completing document upload or file attachment
+- When user confirms document upload completion
+- IMPORTANT: During active workflow, use workflow_executor_tool NOT document_processing_tool
+
 **WORKFLOW EXECUTION Intent → workflow_executor_tool:**
 - After visa recommendation when user confirms ("yes", "proceed", "start", "ok", "sure")
 - During ongoing visa application workflow (user providing documents/information)
 - When user asks questions during workflow (call with intent_type="deviation")
 - When user wants to modify previously provided information (call with intent_type="modification")
 - When user wants to resume after interruption (call with intent_type="resume")
+- AFTER document_processing_tool extracts data (call with intent_type="document_processed")
 
 WORKFLOW TOOL PARAMETERS:
 - user_message: User's current message
-- thread_id: Current thread ID for state persistence
-- intent_type: "workflow_progress" (default), "deviation", "modification", or "resume"
+- intent_type: "workflow_progress" (default), "deviation", "modification", "resume", or "document_processed"
+
+DOCUMENT PROCESSING PARAMETERS:
+- user_message: User's message about document upload
+- document_type: Type of document (passport_bio_page, passport_photo, etc.)
 
 CRITICAL WORKFLOW RULES:
-- ALWAYS pass thread_id to maintain workflow state
 - Use "deviation" intent when user asks off-topic questions during workflow
 - Use "modification" intent when user wants to change previous data
 - Use "resume" intent when user wants to continue after interruption
-- The tool handles ALL workflow stages automatically (documents → personal info → contact info → etc.)
+- Use "document_processed" intent ONLY when previous response contains "EXTRACTED_DATA_JSON:"
+- The workflow handles ALL stages automatically (documents → personal info → contact info → etc.)
+- GPT-4 Vision automatically extracts passport data from uploaded images
 
 # COMMENTED OUT OLD RULES (for reference):
 # - IF previous AI message contains "Can we proceed with applying for" OR "recommend the **" → User saying "yes" = workflow_executor_tool

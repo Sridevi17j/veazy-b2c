@@ -32,6 +32,8 @@ export default function ChatInterface({ isOpen, onClose, initialContext }: ChatI
   const [threadId, setThreadId] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   const { user, logout, getAuthHeaders } = useAuth();
   const router = useRouter();
@@ -165,6 +167,210 @@ export default function ChatInterface({ isOpen, onClose, initialContext }: ChatI
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  // File upload functionality
+  const handleAttachmentClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/jpg,application/pdf';
+    input.multiple = false;
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!threadId) {
+      alert('Please wait for the chat to initialize before uploading files.');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload only JPEG, PNG, or PDF files.');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert('File size must be less than 10MB.');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // Determine document type based on file name or prompt user
+      const documentType = await determineDocumentType(file.name);
+      
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('document_type', documentType);
+      formData.append('thread_id', threadId);
+
+      // Upload file
+      const uploadResponse = await fetch(`${BACKEND_URL}/api/upload-document`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('File upload failed');
+      }
+
+      const uploadResult = await uploadResponse.json();
+      setUploadProgress(100);
+
+      // Add upload confirmation message to chat
+      const uploadMessage: Message = {
+        id: Date.now().toString(),
+        content: `📎 Uploaded: ${file.name} (${documentType})`,
+        type: 'human',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, uploadMessage]);
+
+      // Notify agent about successful upload
+      setTimeout(async () => {
+        setIsUploading(false);
+        setUploadProgress(0);
+        
+        // Send message to agent about document upload
+        const notificationMessage = `I have uploaded my passport bio page`;
+        
+        // Create the user message for the notification
+        const userMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: notificationMessage,
+          type: 'human',
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        setIsTyping(true);
+
+        try {
+          const response = await fetch(`${BACKEND_URL}/threads/${threadId}/runs/stream`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              input: {
+                messages: [{ content: notificationMessage }]
+              }
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to send message');
+          }
+
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          
+          // Generate unique ID for this conversation turn
+          const conversationTurnId = `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+          if (reader) {
+            let currentAiMessage: Message | null = null;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              const chunk = decoder.decode(value);
+              const lines = chunk.split('\n');
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    
+                    if (data.type === 'ai' && data.content) {
+                      if (!currentAiMessage) {
+                        // Start new AI message with unique conversation turn ID
+                        currentAiMessage = {
+                          id: conversationTurnId,
+                          type: 'ai',
+                          content: data.content,
+                          timestamp: new Date()
+                        };
+                        setMessages(prev => [...prev, currentAiMessage!]);
+                      } else {
+                        // Update existing AI message - concatenate new content
+                        currentAiMessage.content += data.content;
+                        setMessages(prev => prev.map(msg => 
+                          msg.id === currentAiMessage!.id 
+                            ? { ...msg, content: currentAiMessage!.content }
+                            : msg
+                        ));
+                      }
+                    }
+                  } catch (parseError) {
+                    console.warn('Failed to parse streaming data:', line);
+                  }
+                }
+              }
+            }
+          }
+
+          setIsTyping(false);
+
+        } catch (error) {
+          console.error('Error sending notification:', error);
+          setIsTyping(false);
+          
+          const errorMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            content: "I received your document but had trouble processing it. Let me try again.",
+            type: 'ai',
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, errorMessage]);
+        }
+      }, 500);
+
+    } catch (error) {
+      console.error('File upload error:', error);
+      setIsUploading(false);
+      setUploadProgress(0);
+      
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        content: "❌ File upload failed. Please try again.",
+        type: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
+  const determineDocumentType = async (filename: string): Promise<string> => {
+    const lowerName = filename.toLowerCase();
+    
+    // Auto-detect based on filename
+    if (lowerName.includes('passport') && lowerName.includes('bio')) {
+      return 'passport_bio_page';
+    }
+    if (lowerName.includes('passport') && lowerName.includes('photo')) {
+      return 'passport_photo';
+    }
+    if (lowerName.includes('passport')) {
+      return 'passport_bio_page'; // Default to bio page
+    }
+    if (lowerName.includes('photo') || lowerName.includes('pic')) {
+      return 'passport_photo';
+    }
+    
+    // Default to passport bio page for happy path (no popup)
+    return 'passport_bio_page';
   };
 
   if (!isOpen) return null;
@@ -348,10 +554,19 @@ export default function ChatInterface({ isOpen, onClose, initialContext }: ChatI
           {/* Input Area */}
           <div className="border-t border-gray-200 p-4">
             <div className="flex items-center space-x-3">
-              <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                </svg>
+              <button 
+                onClick={handleAttachmentClick}
+                disabled={isUploading}
+                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Upload passport or document"
+              >
+                {isUploading ? (
+                  <div className="w-5 h-5 border-2 border-gray-400 border-t-purple-600 rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                )}
               </button>
               <div className="flex-1 relative">
                 <input

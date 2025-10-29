@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 from agent.state import AgentState
 
 @tool
-def session_management_tool(user_message: str, state: AgentState) -> Dict[str, Any]:
+def session_management_tool(user_message: str) -> Dict[str, Any]:
     """Placeholder tool for session management"""
     return {
         "response": "Session management tool is not implemented yet.",

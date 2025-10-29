@@ -79,7 +79,7 @@ class VisaAssistantAgent:
         
         return agent
     
-    def invoke(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    def invoke(self, input_data: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Invoke agent with state validation and error handling.
         Non-streaming version for simple interactions.
@@ -88,8 +88,11 @@ class VisaAssistantAgent:
             # Prepare state with safety checks
             state = self._prepare_state(input_data)
             
-            # Invoke agent
-            result = self.agent.invoke(state)
+            # Invoke agent with config if provided
+            if config:
+                result = self.agent.invoke(state, config=config)
+            else:
+                result = self.agent.invoke(state)
             
             # Validate and clean result
             return self._process_result(result)
@@ -98,7 +101,7 @@ class VisaAssistantAgent:
             print(f"Agent invocation error: {e}")
             return self._handle_agent_error(input_data, str(e))
     
-    async def stream(self, input_data: Dict[str, Any]) -> AsyncGenerator[Dict[str, Any], None]:
+    async def stream(self, input_data: Dict[str, Any], config: Dict[str, Any] = None) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream agent responses for real-time UI updates.
         Yields state updates as they occur.
@@ -107,13 +110,22 @@ class VisaAssistantAgent:
             # Prepare state
             state = self._prepare_state(input_data)
             # Stream with messages mode for token-level streaming (following LangGraph docs)
-            async for message_chunk, metadata in self.agent.astream(state, stream_mode="messages"):
-                processed_chunk = self._process_message_chunk(message_chunk, metadata)
-                if processed_chunk:
-                    yield processed_chunk
+            if config:
+                async for message_chunk, metadata in self.agent.astream(state, stream_mode="messages", config=config):
+                    processed_chunk = self._process_message_chunk(message_chunk, metadata)
+                    if processed_chunk:
+                        yield processed_chunk
+            else:
+                async for message_chunk, metadata in self.agent.astream(state, stream_mode="messages"):
+                    processed_chunk = self._process_message_chunk(message_chunk, metadata)
+                    if processed_chunk:
+                        yield processed_chunk
                     
         except Exception as e:
             print(f"Agent streaming error: {e}")
+            import traceback
+            print(f"Full traceback:")
+            traceback.print_exc()
             yield self._handle_stream_error(input_data, str(e))
     
     def _prepare_state(self, input_data: Dict[str, Any]) -> VisaAgentState:
@@ -125,7 +137,8 @@ class VisaAssistantAgent:
         state = VisaAgentState({
             "messages": input_data.get("messages", []),
             "tool_call_count": 0,
-            "state_version": 1
+            "state_version": 1,
+            "session_id": input_data.get("session_id", "default_thread")  # Add session_id to state
         })
         
         # DEBUG: Check what messages the agent receives
@@ -257,11 +270,11 @@ class VisaAssistantAgent:
 visa_agent = VisaAssistantAgent()
 
 # Export functions for external use
-def invoke_agent(input_data: Dict[str, Any]) -> Dict[str, Any]:
+def invoke_agent(input_data: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
     """Invoke the visa agent with input data"""
-    return visa_agent.invoke(input_data)
+    return visa_agent.invoke(input_data, config)
 
-async def stream_agent(input_data: Dict[str, Any]) -> AsyncGenerator[Dict[str, Any], None]:
+async def stream_agent(input_data: Dict[str, Any], config: Dict[str, Any] = None) -> AsyncGenerator[Dict[str, Any], None]:
     """Stream visa agent responses"""
-    async for chunk in visa_agent.stream(input_data):
+    async for chunk in visa_agent.stream(input_data, config):
         yield chunk

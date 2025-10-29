@@ -4,8 +4,10 @@
 import os
 import time
 from typing import Any, Optional
-from langchain.chat_models import init_chat_model
+# from langchain.chat_models import init_chat_model  # Anthropic - commented out
 from langchain_core.language_models import BaseChatModel
+# from langchain_groq import ChatGroq  # Groq has LangGraph compatibility issues
+from langchain_google_genai import ChatGoogleGenerativeAI  # Using Gemini for LangGraph compatibility
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,7 +18,11 @@ class LLMConfig:
     """Enhanced LLM configuration with retry logic, error handling, and streaming support"""
     
     def __init__(self):
-        self.model_name = os.getenv("LLM_MODEL", "anthropic:claude-sonnet-4-20250514")
+        # Anthropic configuration - commented out
+        # self.model_name = os.getenv("LLM_MODEL", "anthropic:claude-sonnet-4-20250514")
+        
+        # Gemini configuration - new (using recommended model for LangGraph)
+        self.model_name = os.getenv("LLM_MODEL", "gemini-2.0-flash")
         self.max_tokens = int(os.getenv("LLM_MAX_TOKENS", "8192"))
         self.temperature = float(os.getenv("LLM_TEMPERATURE", "0"))
         self.max_retries = int(os.getenv("LLM_MAX_RETRIES", "3"))
@@ -29,21 +35,32 @@ class LLMConfig:
     def _initialize_llm(self) -> BaseChatModel:
         """Initialize LLM with error handling and validation"""
         try:
-            required_env_vars = ["ANTHROPIC_API_KEY"]
-            missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+            # Anthropic initialization - commented out
+            # required_env_vars = ["ANTHROPIC_API_KEY"]
+            # missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+            # 
+            # if missing_vars:
+            #     raise ValueError(f"Missing required environment variables: {missing_vars}")
+            # 
+            # llm = init_chat_model(
+            #     model=self.model_name,
+            #     max_tokens=self.max_tokens,
+            #     temperature=self.temperature,
+            #     timeout=self.timeout
+            # )
             
-            if missing_vars:
-                raise ValueError(f"Missing required environment variables: {missing_vars}")
-            
-            llm = init_chat_model(
+            # Gemini initialization - new
+            llm = ChatGoogleGenerativeAI(
                 model=self.model_name,
+                google_api_key="AIzaSyAZy8mGFoPeHqM0RYUrYytbSIuvCodiODg",
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
                 timeout=self.timeout
             )
             
             # Test the model
-            test_response = llm.invoke([{"role": "user", "content": "Hello"}])
+            from langchain_core.messages import HumanMessage
+            test_response = llm.invoke([HumanMessage(content="Hello")])
             if not test_response or not test_response.content:
                 raise RuntimeError("LLM initialization test failed")
             
@@ -177,7 +194,9 @@ def validate_environment() -> tuple[bool, list[str]]:
     """Validate all required environment variables and configurations"""
     issues = []
     
-    required_vars = ["ANTHROPIC_API_KEY"]
+    # required_vars = ["ANTHROPIC_API_KEY"]  # Anthropic - commented out
+    # required_vars = ["GROQ_API_KEY"]  # Groq - commented out
+    required_vars = ["GOOGLE_API_KEY"]  # Gemini - new
     for var in required_vars:
         if not os.getenv(var):
             issues.append(f"Missing required environment variable: {var}")

@@ -22,7 +22,7 @@ class LLMConfig:
         # self.model_name = os.getenv("LLM_MODEL", "anthropic:claude-sonnet-4-20250514")
         
         # Gemini configuration - new (using recommended model for LangGraph)
-        self.model_name = os.getenv("LLM_MODEL", "gemini-2.0-flash")
+        self.model_name = os.getenv("LLM_MODEL", "gemini-2.5-flash")
         self.max_tokens = int(os.getenv("LLM_MAX_TOKENS", "8192"))
         self.temperature = float(os.getenv("LLM_TEMPERATURE", "0"))
         self.max_retries = int(os.getenv("LLM_MAX_RETRIES", "3"))
@@ -50,9 +50,13 @@ class LLMConfig:
             # )
             
             # Gemini initialization - new
+            google_api_key = os.getenv("GOOGLE_API_KEY")
+            if not google_api_key:
+                raise ValueError("GOOGLE_API_KEY environment variable is required")
+
             llm = ChatGoogleGenerativeAI(
                 model=self.model_name,
-                google_api_key="AIzaSyAZy8mGFoPeHqM0RYUrYytbSIuvCodiODg",
+                google_api_key=google_api_key,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
                 timeout=self.timeout

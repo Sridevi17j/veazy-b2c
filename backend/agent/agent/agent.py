@@ -18,6 +18,7 @@ from tools.workflow_executor import workflow_executor_tool
 from tools.application_detailed import application_detailed_tool
 from tools.document_processing import document_processing_tool
 from tools.session_management import session_management_tool
+from tools.start_workflow_tool import start_detailed_application_process
 
 
 class VisaAssistantAgent:
@@ -40,7 +41,8 @@ class VisaAssistantAgent:
             workflow_executor_tool,
             application_detailed_tool,
             document_processing_tool,
-            session_management_tool
+            session_management_tool,
+            start_detailed_application_process
         ]
         return tools
     
@@ -76,7 +78,7 @@ class VisaAssistantAgent:
             state_schema=VisaAgentState,
             prompt=custom_prompt
         )
-        
+
         return agent
     
     def invoke(self, input_data: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
@@ -138,8 +140,12 @@ class VisaAssistantAgent:
             "messages": input_data.get("messages", []),
             "tool_call_count": 0,
             "state_version": 1,
-            "session_id": input_data.get("session_id", "default_thread")  # Add session_id to state
+            "session_id": input_data.get("session_id", "default_thread"),  # Add session_id to state
+            "user_id": input_data.get("user_id")  # Add user_id to state
         })
+        
+        # DEBUG: Check if user_id is flowing through
+        print(f"DEBUG AGENT: Agent state prepared with user_id: {state.get('user_id')}")
         
         # DEBUG: Check what messages the agent receives
         print(f"DEBUG AGENT: Agent will process {len(state['messages'])} messages:")

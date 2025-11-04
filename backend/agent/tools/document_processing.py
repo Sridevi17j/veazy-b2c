@@ -12,122 +12,142 @@ from datetime import datetime
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
 from config.settings import invoke_llm_safe
-from database.models.comprehensive_visa_application import ComprehensiveVisaApplication, DocumentInfo
+from database.models.visa_application import VisaApplication, DocumentInfo, TravelerData
 
 @tool
-async def document_processing_tool(user_message: str, document_type: str = "unknown", session_id: str = "default_thread") -> str:
+async def document_processing_tool(
+    user_message: str,
+    document_type: str = "unknown",
+    session_id: str = "default_thread",
+    user_id: str = None
+) -> str:
     """
     Process uploaded documents using GPT-4 Vision for extraction.
-    
+
     Use this tool when:
     - User uploads documents (passport, photos, tickets, etc.)
     - User mentions uploading files
     - Documents need to be processed and information extracted
-    
+
     Args:
         user_message: User's message about document upload
         document_type: Type of document (passport_bio_page, passport_photo, etc.)
-    
+        session_id: Thread/session ID for this conversation
+        user_id: User ID (optional, will try to get from thread if not provided)
+
     Returns:
         String response with extracted data for workflow executor
     """
-    
+
+    print("=" * 80)
+    print("🔧 DOCUMENT_PROCESSING_TOOL CALLED!")
+    print(f"📝 User message: {user_message}")
+    print(f"📝 Document type: {document_type}")
+    print(f"📝 Session ID: {session_id}")
+    print(f"📝 User ID: {user_id}")
+    print("=" * 80)
+
     try:
         # Use session_id passed from agent state
         thread_id = session_id
-        
-        # Get user_id from thread state
-        user_id = _get_user_id_from_thread(thread_id)
-        
-        # Direct database access - find by thread_id (each thread = one application)
-        application = await ComprehensiveVisaApplication.find_one({"thread_id": thread_id})
+
+        # Get user_id from parameter first, fallback to thread state
+        if not user_id:
+            user_id = _get_user_id_from_thread(thread_id)
+
+        print(f"DEBUG: document_processing_tool - user_id={user_id}, thread_id={thread_id}")
+
+        # Direct database access - find by user_id and in_progress status
+        application = await VisaApplication.find_one({"user_id": user_id, "status": "in_progress"})
         if not application:
+            print(f"DEBUG: No visa application found for user_id={user_id}")
             return "I couldn't find your visa application. Please start the application process first."
         
         # Analyze user message to understand what documents were uploaded
         analysis = await _analyze_upload_message(user_message)
         
         if analysis.get("message_intent") == "upload_confirmation":
+            # Get or create primary traveler
+            primary_traveler = application.get_primary_traveler()
+            if not primary_traveler:
+                # Create first traveler
+                primary_traveler = TravelerData(
+                    traveler_id=1,
+                    is_primary_applicant=True
+                )
+                application.travelers.append(primary_traveler)
+
             # Process each uploaded document with GPT-4 Vision
             processed_documents = []
             all_extracted_data = {}
-            
+
             for doc_type in analysis.get("document_types", []):
                 if doc_type in ["passport_bio_page", "passport"]:
                     # Get file path for uploaded document
-                    file_path = await _get_uploaded_file_path(user_message, "passport_bio_page")
-                    
+                    file_path = await _get_uploaded_file_path(thread_id, "passport_bio_page")
+
                     if file_path and os.path.exists(file_path):
                         # Extract passport data using GPT-4 Vision
                         extracted_data = await _extract_passport_with_gpt4_vision(file_path)
                     else:
                         # Fallback to simulated extraction for testing
                         extracted_data = await _simulate_passport_extraction(user_message)
-                    
+
                     # Create document info
                     doc_info = DocumentInfo(
-                        file_path=file_path or f"/uploads/{thread_id}/passport_bio_page.jpg",
+                        file_path=file_path or f"/tmp/uploads/{thread_id}/passport_bio_page.jpg",
                         upload_timestamp=datetime.utcnow(),
                         file_type="image/jpeg",
                         extraction_status="completed",
                         extracted_data=extracted_data
                     )
-                    
-                    # Update application with document info and extracted data
-                    application.documents.passport_bio_page = doc_info
-                    
-                    # Update personal info with extracted data
-                    for field, value in extracted_data.items():
-                        if hasattr(application.personal_info, field) and value is not None:
-                            setattr(application.personal_info, field, value)
-                    
-                    # Set extraction methods
-                    application.personal_info.extraction_methods.update({
-                        "surname": "passport_bio_page",
-                        "given_name": "passport_bio_page", 
-                        "date_of_birth": "passport_bio_page",
-                        "nationality": "passport_bio_page",
-                        "passport_number": "passport_bio_page",
-                        "gender": "passport_bio_page",
-                        "place_of_birth": "passport_bio_page"
-                    })
-                    
+
+                    # Store in primary traveler's documents
+                    primary_traveler.documents["passport_bio_page"] = doc_info
+
+                    # Also store extracted personal data in collected_data
+                    if "personal_info" not in primary_traveler.collected_data:
+                        primary_traveler.collected_data["personal_info"] = {}
+
+                    primary_traveler.collected_data["personal_info"].update(extracted_data)
+
                     processed_documents.append("Passport Bio Page")
                     all_extracted_data.update(extracted_data)
-                    
+
                 elif doc_type in ["passport_photo", "photo"]:
                     # Get file path and validate passport photo
-                    file_path = await _get_uploaded_file_path(user_message, "passport_photo")
-                    
+                    file_path = await _get_uploaded_file_path(thread_id, "passport_photo")
+
                     if file_path and os.path.exists(file_path):
                         validation_result = await _validate_passport_photo_with_gpt4_vision(file_path)
                     else:
                         validation_result = {"status": "valid", "confidence": 0.9}
-                    
+
                     # Create document info
                     doc_info = DocumentInfo(
-                        file_path=file_path or f"/uploads/{thread_id}/passport_photo.jpg",
+                        file_path=file_path or f"/tmp/uploads/{thread_id}/passport_photo.jpg",
                         upload_timestamp=datetime.utcnow(),
                         file_type="image/jpeg",
                         extraction_status="completed",
                         extracted_data=validation_result
                     )
-                    
-                    application.documents.passport_photo = doc_info
+
+                    primary_traveler.documents["passport_photo"] = doc_info
                     processed_documents.append("Passport Photo")
-            
+
             if processed_documents:
                 # Mark documents stage as complete
-                if "documents" not in application.workflow_progress.completed_stages:
-                    application.workflow_progress.completed_stages.append("documents")
-                
+                current_stage = application.workflow_info.current_stage or "stage_1_documents"
+                if current_stage not in application.workflow_info.completed_stages:
+                    application.workflow_info.completed_stages.append(current_stage)
+
                 # Update timestamp and save (single save operation)
                 application.update_timestamp()
                 await application.save()
-                
+
                 # Format extracted data for display
                 extracted_display = _format_extracted_data_for_display(all_extracted_data)
-                
+
                 return f"""✅ **Document Processing Complete!**
 
 **Processed Documents:**
@@ -136,13 +156,9 @@ async def document_processing_tool(user_message: str, document_type: str = "unkn
 **Extracted Information:**
 {extracted_display}
 
-**Next Stage: Personal Information**
-Since I've extracted most personal details from your passport, I only need:
-- **Marital Status**: Are you single, married, divorced, or widowed?
+Your documents have been successfully processed and saved to your visa application.
 
-EXTRACTED_DATA_JSON: {json.dumps(all_extracted_data)}
-
-Please provide your marital status to continue to the next stage."""
+EXTRACTED_DATA_JSON: {json.dumps(all_extracted_data)}"""
             else:
                 return "I couldn't process the documents. Please confirm what type of documents you uploaded (passport bio page, passport photo)."
         
@@ -183,25 +199,32 @@ Respond with JSON:
         return {"document_types": ["passport_bio_page"], "upload_status": "completed", "message_intent": "upload_confirmation"}
 
 
-async def _get_uploaded_file_path(user_message: str, document_type: str) -> Optional[str]:
-    """Get the file path for uploaded document"""
-    
+async def _get_uploaded_file_path(thread_id: str, document_type: str) -> Optional[str]:
+    """Get the file path for uploaded document
+
+    Args:
+        thread_id: The actual thread/session ID
+        document_type: Type of document to look for
+
+    Returns:
+        Full path to uploaded file or None if not found
+    """
+
     try:
-        # In a real implementation, this would:
-        # 1. Parse user message for file references
-        # 2. Check upload API or file storage for recent uploads
-        # 3. Return the actual file path
-        
-        # For now, check if there are any uploaded files for this thread
-        thread_id = "default_thread"  # TODO: Get from agent context
         upload_dir = f"/tmp/uploads/{thread_id}"
-        
+
+        print(f"DEBUG: Looking for {document_type} in {upload_dir}")
+
         if os.path.exists(upload_dir):
             # Look for files matching the document type
             for filename in os.listdir(upload_dir):
                 if document_type in filename:
-                    return os.path.join(upload_dir, filename)
-        
+                    file_path = os.path.join(upload_dir, filename)
+                    print(f"DEBUG: Found file: {file_path}")
+                    return file_path
+        else:
+            print(f"DEBUG: Upload directory does not exist: {upload_dir}")
+
         return None  # Will trigger fallback simulation for testing
         
     except Exception as e:

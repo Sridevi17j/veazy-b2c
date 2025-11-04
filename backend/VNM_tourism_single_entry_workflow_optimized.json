@@ -1,0 +1,558 @@
+{
+  "_id": "VNM_tourism_single_entry_optimized",
+  "country_code": "VNM",
+  "country_name": "Vietnam",
+  "visa_type": "Vietnam Tourism Single Entry",
+  "visa_code": "DL-SE",
+  "version": "2.0",
+  "created_at": "2025-11-01T14:00:00.000Z",
+  "updated_at": "2025-11-01T14:00:00.000Z",
+  
+  "workflow_description": "Optimized workflow for Vietnam Tourism Single Entry visa - minimizes user input by maximizing document extraction",
+  
+  "collection_sequence": [
+    {
+      "stage": "documents",
+      "stage_title": "Document Collection",
+      "stage_description": "Upload required documents for automatic data extraction",
+      "required_documents": [
+        {
+          "type": "passport_bio_page",
+          "name": "Passport Bio Page",
+          "description": "Clear scan/photo of passport bio page (validity ≥ 6 months)",
+          "required": true,
+          "file_requirements": {
+            "formats": ["jpg", "jpeg", "png", "pdf"],
+            "max_size_mb": 5,
+            "min_validity_months": 6
+          },
+          "extracts": [
+            "surname",
+            "givenName", 
+            "dateOfBirth",
+            "nationality",
+            "placeOfBirth",
+            "passportNumber",
+            "passportType",
+            "passportIssuingCountry",
+            "passportIssueDate",
+            "passportExpiryDate",
+            "gender"
+          ],
+          "ai_processing": {
+            "orientation_correction": true,
+            "legibility_check": true,
+            "validity_verification": true
+          }
+        },
+        {
+          "type": "passport_photo",
+          "name": "Passport Photograph",
+          "description": "Recent passport-style photo (4x6cm, white background, formal)",
+          "required": true,
+          "file_requirements": {
+            "formats": ["jpg", "jpeg"],
+            "max_size_mb": 2,
+            "dimensions": "4x6cm equivalent",
+            "background": "white",
+            "requirements": ["straight_face", "no_hat", "no_glasses", "formal_clothes"]
+          },
+          "ai_processing": {
+            "orientation_correction": true,
+            "aspect_ratio_adjustment": true,
+            "face_coverage_check": "70%",
+            "background_cleanup": true,
+            "format_conversion": "jpg"
+          }
+        },
+        {
+          "type": "flight_tickets",
+          "name": "Flight Tickets (Optional)",
+          "description": "Flight booking/tickets for automatic travel date extraction",
+          "required": false,
+          "extracts": [
+            "intendedEntryDate",
+            "intendedExitDate", 
+            "expectedLengthOfStay",
+            "entryBorderGate",
+            "exitBorderGate"
+          ],
+          "fallback_method": "user_input"
+        }
+      ]
+    },
+    {
+      "stage": "contact_verification",
+      "stage_title": "Contact Information",
+      "stage_description": "Verify and provide contact details",
+      "fields": {
+        "email": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "email",
+          "validation": {
+            "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+            "confirmation_required": true
+          },
+          "prompt": "Please provide your email address for visa communications"
+        },
+        "phoneNumber": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "tel",
+          "validation": {
+            "format": "international",
+            "min_length": 10
+          },
+          "prompt": "Please provide your primary phone number (with country code)"
+        },
+        "alternatePhoneNumber": {
+          "extraction_method": "user_input",
+          "required": false,
+          "field_type": "tel",
+          "prompt": "Alternate phone number (optional)"
+        }
+      }
+    },
+    {
+      "stage": "travel_information",
+      "stage_title": "Travel Details",
+      "stage_description": "Travel dates and Vietnam address information",
+      "fields": {
+        "intendedEntryDate": {
+          "extraction_method": "flight_tickets_or_user_input",
+          "required": true,
+          "field_type": "date",
+          "format": "DD/MM/YYYY",
+          "validation": {
+            "min_date": "today",
+            "max_date": "+1_year"
+          },
+          "prompt": "When do you plan to enter Vietnam?"
+        },
+        "intendedExitDate": {
+          "extraction_method": "flight_tickets_or_user_input", 
+          "required": true,
+          "field_type": "date",
+          "format": "DD/MM/YYYY",
+          "validation": {
+            "after_field": "intendedEntryDate",
+            "max_duration_days": 30
+          },
+          "prompt": "When do you plan to exit Vietnam?"
+        },
+        "expectedLengthOfStay": {
+          "extraction_method": "calculated_from_dates",
+          "required": true,
+          "field_type": "number",
+          "calculation": "days_between(intendedExitDate, intendedEntryDate)"
+        },
+        "entryBorderGate": {
+          "extraction_method": "flight_tickets_or_user_input",
+          "required": true,
+          "field_type": "select",
+          "options": [
+            "Noi Bai International Airport (Hanoi)",
+            "Tan Son Nhat International Airport (Ho Chi Minh City)",
+            "Da Nang International Airport",
+            "Can Tho International Airport",
+            "Cam Ranh International Airport",
+            "Other"
+          ],
+          "prompt": "Which airport/border gate will you enter Vietnam through?"
+        },
+        "exitBorderGate": {
+          "extraction_method": "flight_tickets_or_user_input",
+          "required": true,
+          "field_type": "select",
+          "options": [
+            "Noi Bai International Airport (Hanoi)",
+            "Tan Son Nhat International Airport (Ho Chi Minh City)", 
+            "Da Nang International Airport",
+            "Can Tho International Airport",
+            "Cam Ranh International Airport",
+            "Other"
+          ],
+          "prompt": "Which airport/border gate will you exit Vietnam through?"
+        },
+        "residentialAddressVietnam": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "text",
+          "prompt": "What is your accommodation address in Vietnam? (Hotel/Airbnb address)"
+        },
+        "provinceCity": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": [
+            "Ho Chi Minh City",
+            "Hanoi", 
+            "Da Nang",
+            "Can Tho",
+            "An Giang",
+            "Bac Ninh",
+            "Cao Bang",
+            "Ca Mau",
+            "Gia Lai",
+            "Ha Tinh",
+            "Hung Yen",
+            "Khanh Hoa"
+          ],
+          "prompt": "Which city/province will you be staying in?"
+        },
+        "wardCommune": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "text",
+          "prompt": "Ward/Commune of your accommodation (check with your hotel)"
+        }
+      }
+    },
+    {
+      "stage": "personal_details_completion",
+      "stage_title": "Additional Personal Information", 
+      "stage_description": "Complete remaining personal details not extracted from passport",
+      "fields": {
+        "middleName": {
+          "extraction_method": "user_input",
+          "required": false,
+          "field_type": "text",
+          "prompt": "Middle name (if any)"
+        },
+        "religion": {
+          "extraction_method": "user_input",
+          "required": false,
+          "field_type": "select",
+          "options": ["Christian", "Muslim", "Buddhist", "Hindu", "Other", "No Religion"],
+          "prompt": "Religion (optional)"
+        },
+        "maritalStatus": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Single", "Married", "Divorced", "Widowed"],
+          "prompt": "What is your marital status?"
+        }
+      }
+    },
+    {
+      "stage": "address_information",
+      "stage_title": "Home Address",
+      "stage_description": "Your permanent address in your home country",
+      "fields": {
+        "permanentAddress": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "address_group",
+          "sub_fields": {
+            "streetAddress": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "Street address"
+            },
+            "city": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "City"
+            },
+            "state": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "State/Province"
+            },
+            "zipCode": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "ZIP/Postal code"
+            },
+            "country": {
+              "required": true,
+              "field_type": "text",
+              "default_from": "nationality",
+              "prompt": "Country"
+            }
+          }
+        }
+      }
+    },
+    {
+      "stage": "occupation_information",
+      "stage_title": "Employment Details",
+      "stage_description": "Your current occupation and employer information",
+      "fields": {
+        "occupation": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Employee", "Businessman", "Official", "Student", "Retired", "Unemployed", "Others"],
+          "prompt": "What is your occupation?"
+        },
+        "employerName": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "text",
+          "prompt": "Company/Employer name"
+        },
+        "jobTitle": {
+          "extraction_method": "user_input", 
+          "required": true,
+          "field_type": "text",
+          "prompt": "Your job title/position"
+        },
+        "employerAddress": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "address_group",
+          "sub_fields": {
+            "streetAddress": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "Company street address"
+            },
+            "city": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "Company city"
+            },
+            "state": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "Company state/province"
+            },
+            "zipCode": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "Company ZIP code"
+            },
+            "country": {
+              "required": true,
+              "field_type": "text",
+              "default_from": "nationality",
+              "prompt": "Company country"
+            }
+          }
+        },
+        "employerPhoneNumber": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "tel",
+          "prompt": "Company phone number"
+        }
+      }
+    },
+    {
+      "stage": "financial_information",
+      "stage_title": "Financial Details",
+      "stage_description": "Financial capacity and trip expenses",
+      "fields": {
+        "annualIncome": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "number",
+          "prompt": "Your annual income (in USD)"
+        },
+        "tripExpensesCoveredBy": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Personal", "Company", "Family", "Sponsor", "Other"],
+          "prompt": "Who is covering your trip expenses?"
+        },
+        "estimatedTripExpenses": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "number",
+          "prompt": "Estimated total trip expenses (in USD)"
+        },
+        "haveHealthInsurance": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "boolean",
+          "prompt": "Do you have health/travel insurance?"
+        },
+        "insuranceProviderName": {
+          "extraction_method": "user_input",
+          "required_if": "haveHealthInsurance=true",
+          "field_type": "text",
+          "prompt": "Insurance provider name"
+        }
+      }
+    },
+    {
+      "stage": "emergency_contact",
+      "stage_title": "Emergency Contact",
+      "stage_description": "Emergency contact person details",
+      "fields": {
+        "emergencyContact": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "contact_group",
+          "sub_fields": {
+            "fullName": {
+              "required": true,
+              "field_type": "text",
+              "prompt": "Emergency contact full name"
+            },
+            "relationship": {
+              "required": true,
+              "field_type": "select",
+              "options": ["Spouse", "Parent", "Child", "Sibling", "Friend", "Colleague", "Other"],
+              "prompt": "Relationship to you"
+            },
+            "phoneNumber": {
+              "required": true,
+              "field_type": "tel",
+              "prompt": "Emergency contact phone number"
+            },
+            "emailAddress": {
+              "required": false,
+              "field_type": "email",
+              "prompt": "Emergency contact email (optional)"
+            },
+            "address": {
+              "required": true,
+              "field_type": "address_group",
+              "sub_fields": {
+                "streetAddress": {
+                  "required": true,
+                  "field_type": "text",
+                  "prompt": "Emergency contact street address"
+                },
+                "city": {
+                  "required": true,
+                  "field_type": "text", 
+                  "prompt": "Emergency contact city"
+                },
+                "state": {
+                  "required": true,
+                  "field_type": "text",
+                  "prompt": "Emergency contact state"
+                },
+                "zipCode": {
+                  "required": true,
+                  "field_type": "text",
+                  "prompt": "Emergency contact ZIP code"
+                },
+                "country": {
+                  "required": true,
+                  "field_type": "text",
+                  "prompt": "Emergency contact country"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "stage": "additional_questions",
+      "stage_title": "Additional Information",
+      "stage_description": "Standard visa application questions",
+      "fields": {
+        "previousVisitsToVietnam": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Yes", "No"],
+          "default": "No",
+          "prompt": "Have you visited Vietnam before?"
+        },
+        "haveRelativesInVietnam": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Yes", "No"],
+          "default": "No",
+          "prompt": "Do you have relatives living in Vietnam?"
+        },
+        "criminalRecordStatus": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Yes", "No"],
+          "default": "No",
+          "prompt": "Do you have any criminal record?"
+        },
+        "deportationHistory": {
+          "extraction_method": "user_input",
+          "required": true,
+          "field_type": "select",
+          "options": ["Yes", "No"],
+          "default": "No",
+          "prompt": "Have you ever been deported from any country?"
+        }
+      }
+    },
+    {
+      "stage": "visa_preferences",
+      "stage_title": "Visa Specifications",
+      "stage_description": "Final visa type and validity preferences",
+      "fields": {
+        "visaType": {
+          "extraction_method": "handoff_data",
+          "required": true,
+          "field_type": "select",
+          "options": ["Single Entry", "Multiple Entry"],
+          "default": "Single Entry",
+          "prompt": "Visa entry type (pre-selected based on your choice)"
+        },
+        "desiredVisaValidity": {
+          "extraction_method": "calculated_from_travel_dates",
+          "required": true,
+          "field_type": "date_range",
+          "calculation": {
+            "from": "intendedEntryDate",
+            "to": "intendedExitDate"
+          }
+        }
+      }
+    }
+  ],
+  
+  "default_values": {
+    "purposeOfVisit": "Tourist",
+    "passportType": "Ordinary", 
+    "previousVisitsToVietnam": "No",
+    "haveRelativesInVietnam": "No",
+    "criminalRecordStatus": "No",
+    "deportationHistory": "No",
+    "visaType": "Single Entry",
+    "tripExpensesCoveredBy": "Personal",
+    "haveHealthInsurance": true
+  },
+  
+  "total_stages": 9,
+  
+  "completion_criteria": {
+    "all_required_documents_uploaded": true,
+    "all_required_fields_collected": true,
+    "data_validation_passed": true,
+    "user_confirmation_received": true
+  },
+  
+  "automation_output_mapping": {
+    "target_format": "personal-info.properties.js",
+    "field_mapping": {
+      "passport_extracted": [
+        "surname", "givenName", "dateOfBirth", "nationality", 
+        "placeOfBirth", "passportNumber", "passportType",
+        "passportIssuingCountry", "passportIssueDate", "passportExpiryDate", "gender"
+      ],
+      "user_provided": [
+        "middleName", "religion", "maritalStatus", "email", "phoneNumber",
+        "alternatePhoneNumber", "permanentAddress", "occupation", "employerName",
+        "jobTitle", "employerAddress", "employerPhoneNumber", "annualIncome",
+        "tripExpensesCoveredBy", "estimatedTripExpenses", "haveHealthInsurance",
+        "insuranceProviderName", "emergencyContact", "previousVisitsToVietnam",
+        "haveRelativesInVietnam", "criminalRecordStatus", "deportationHistory"
+      ],
+      "travel_data": [
+        "purposeOfVisit", "intendedEntryDate", "intendedExitDate", 
+        "expectedLengthOfStay", "entryBorderGate", "exitBorderGate",
+        "residentialAddressVietnam", "provinceCity", "wardCommune", 
+        "visaType", "desiredVisaValidity"
+      ]
+    }
+  }
+}

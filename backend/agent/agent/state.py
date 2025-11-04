@@ -48,6 +48,8 @@ class AgentState(TypedDict):
     current_collection_stage: Optional[str]                    # "basic", "detailed", "documents", etc.
     
     # Session management
+    session_id: Optional[str]                                  # Current session/thread ID
+    user_id: Optional[str]                                     # Authenticated user ID from JWT token
     incomplete_session_id: Optional[str]                       # For resuming incomplete applications
     
     # Error handling and retry logic

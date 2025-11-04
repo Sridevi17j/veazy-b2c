@@ -29,11 +29,12 @@ async def connect_to_mongo():
     from database.models.user import User
     from database.models.country import Country
     from database.models.visa_type_selection import VisaTypeSelection
-    
+    from database.models.visa_application import VisaApplication
+
     # Initialize Beanie with all models
     await init_beanie(
         database=db.database,
-        document_models=[User, Country, VisaTypeSelection]
+        document_models=[User, Country, VisaTypeSelection, VisaApplication]
     )
     
     print(f"Connected to MongoDB database: {database_name}")

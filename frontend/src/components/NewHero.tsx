@@ -5,13 +5,14 @@ import { MessageCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CustomDatePicker from './DatePicker'
+import { BACKEND_URL } from '@/config/api';
 
 interface Country {
   id: string;
   code: string;
   name: string;
   official_name?: string;
-  purposes: string[];
+  // purposes: string[]; // Removed - using hardcoded purposes
 }
 
 interface NewHeroProps {
@@ -21,18 +22,19 @@ interface NewHeroProps {
 }
 
 export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }: NewHeroProps) {
-  const [departureDate, setDepartureDate] = useState<Date | undefined>(new Date('2025-10-05'));
-  const [returnDate, setReturnDate] = useState<Date | undefined>(new Date('2025-10-15'));
+  const [departureDate, setDepartureDate] = useState<Date | undefined>(undefined);
+  const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [today, setToday] = useState<Date | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>('Vietnam');
   const [selectedPurpose, setSelectedPurpose] = useState<string>('Tourism');
   const [countries, setCountries] = useState<Country[]>([]);
-  const [availablePurposes, setAvailablePurposes] = useState<string[]>([]);
+  const [availablePurposes, setAvailablePurposes] = useState<string[]>(['Business', 'Tourism']);
   const [countriesLoading, setCountriesLoading] = useState(false);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [isPurposeDropdownOpen, setIsPurposeDropdownOpen] = useState(false);
   const [hasFetchedCountries, setHasFetchedCountries] = useState(false);
   const [sessionCache, setSessionCache] = useState<{countries?: Country[]}>({});
+  const [shouldOpenReturnDatePicker, setShouldOpenReturnDatePicker] = useState(false);
 
   // Set today's date consistently on mount to avoid hydration mismatch
   useEffect(() => {
@@ -167,8 +169,23 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
     }
   };
 
+  // Called after departure date is selected and calendar closes
+  const handleDepartureDateSelected = () => {
+    // Trigger return date picker to open
+    setShouldOpenReturnDatePicker(true);
+    // Reset the trigger after a short delay
+    setTimeout(() => {
+      setShouldOpenReturnDatePicker(false);
+    }, 100);
+  };
+
   const handleReturnDateChange = (date: Date | undefined) => {
     setReturnDate(date);
+  };
+
+  const handleReturnDatePickerOpened = () => {
+    // Reset the trigger when the return date picker opens
+    setShouldOpenReturnDatePicker(false);
   };
 
   // Fetch countries from API with session caching
@@ -184,8 +201,7 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
     
     setCountriesLoading(true);
     try {
-      // const response = await fetch('http://localhost:8000/api/countries/supported'); // Local development
-      const response = await fetch('https://veazy-backend.onrender.com/api/countries/supported');
+      const response = await fetch(`${BACKEND_URL}/api/countries/`);
       if (!response.ok) {
         throw new Error('Failed to fetch countries');
       }
@@ -197,12 +213,12 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
       setHasFetchedCountries(true);
     } catch (error) {
       console.error('Error fetching countries:', error);
-      // Fallback to hardcoded countries with purposes
+      // Fallback to hardcoded countries (simplified)
       const fallbackCountries = [
-        { id: '1', code: 'VNM', name: 'Vietnam', purposes: ['tourism', 'business', 'social', 'cultural'] },
-        { id: '2', code: 'THA', name: 'Thailand', purposes: ['tourism', 'business', 'investment', 'family visit'] },
-        { id: '3', code: 'IDN', name: 'Indonesia', purposes: ['tourism', 'business', 'social'] },
-        { id: '4', code: 'ARE', name: 'United Arab Emirates', purposes: ['tourism', 'business', 'investment', 'medical'] }
+        { id: '1', code: 'VNM', name: 'Vietnam', official_name: 'Socialist Republic of Vietnam' },
+        { id: '2', code: 'THA', name: 'Thailand', official_name: 'Kingdom of Thailand' },
+        { id: '3', code: 'IDN', name: 'Indonesia', official_name: 'Republic of Indonesia' },
+        { id: '4', code: 'ARE', name: 'United Arab Emirates', official_name: 'United Arab Emirates' }
       ];
       setCountries(fallbackCountries);
       setSessionCache(prev => ({ ...prev, countries: fallbackCountries }));
@@ -223,8 +239,9 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
   // Handle country selection
   const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country.name);
-    setAvailablePurposes(country.purposes);
-    setSelectedPurpose('');
+    // Keep hardcoded purposes - no need to update from country data
+    // setAvailablePurposes(country.purposes); // Removed - using hardcoded values
+    setSelectedPurpose('Tourism'); // Reset to default
     setIsCountryDropdownOpen(false);
     // Notify parent component
     onCountrySelect?.(country.name, country.code);
@@ -309,7 +326,7 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
               <form className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs text-muted-foreground mb-1 font-medium">Destination</label>
-                  <div className="relative" data-dropdown="country">
+                  <div className={`relative ${isCountryDropdownOpen ? 'z-[10000]' : ''}`} data-dropdown="country">
                     <div
                       onClick={handleCountryDropdownClick}
                       className="w-full p-3 text-sm border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-background cursor-pointer hover:bg-accent/50 transition-colors duration-200"
@@ -331,7 +348,7 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
 
                     {/* Dropdown menu */}
                     {isCountryDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-[10000] max-h-60 overflow-y-auto">
                         {countriesLoading ? (
                           <div className="p-3 text-center text-muted-foreground">
                             Loading countries...
@@ -367,6 +384,7 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
                     label="Departure Date"
                     selected={departureDate}
                     onSelect={handleDepartureDateChange}
+                    onDateSelectedAndClosed={handleDepartureDateSelected}
                     placeholder="Select departure date"
                     fromDate={today}
                   />
@@ -380,11 +398,13 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
                     fromDate={getReturnMinDate()}
                     error={returnDate && departureDate && returnDate < departureDate}
                     errorMessage={returnDate && departureDate && returnDate < departureDate ? "Return date cannot be before departure date" : undefined}
+                    shouldOpen={shouldOpenReturnDatePicker}
+                    onCalendarOpened={handleReturnDatePickerOpened}
                   />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs text-muted-foreground mb-1 font-medium">Purpose of travel</label>
-                  <div className="relative" data-dropdown="purpose">
+                  <div className={`relative ${isPurposeDropdownOpen ? 'z-[10000]' : ''}`} data-dropdown="purpose">
                     <div
                       onClick={handlePurposeDropdownClick}
                       className="w-full p-3 text-sm border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-background cursor-pointer hover:bg-accent/50 transition-colors duration-200"
@@ -406,7 +426,7 @@ export default function NewHero({ onCountrySelect, onPurposeSelect, onChatOpen }
 
                     {/* Purpose dropdown menu */}
                     {isPurposeDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-[10000] max-h-60 overflow-y-auto">
                         {availablePurposes.length > 0 ? (
                           availablePurposes.map((purpose, index) => (
                             <div

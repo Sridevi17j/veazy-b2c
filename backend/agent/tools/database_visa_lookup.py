@@ -25,11 +25,17 @@ async def database_visa_lookup_tool(country_code: str, user_details: str) -> str
     Args:
         country_code: ISO country code (e.g., "VNM" for Vietnam)
         user_details: User's travel details and purpose
-    
+
     Returns:
         String response with visa recommendation
     """
-    
+
+    print("=" * 80)
+    print("🔧 DATABASE_VISA_LOOKUP_TOOL CALLED!")
+    print(f"📝 Country code: {country_code}")
+    print(f"📝 User details: {user_details}")
+    print("=" * 80)
+
     try:
         # Fetch visa document from database
         visa_document = await VisaTypeSelection.find_one({"country_code": country_code})

@@ -6,78 +6,94 @@ from datetime import datetime
 from enum import Enum
 
 class ApplicationStatus(str, Enum):
-    COLLECTING_BASIC_INFO = "collecting_basic_info"
-    COLLECTING_DOCUMENTS = "collecting_documents"
-    GENERATING_FORM = "generating_form"
-    USER_REVIEWING_FORM = "user_reviewing_form"
-    USER_APPROVED_FORM = "user_approved_form"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
     SUBMITTED = "submitted"
     APPROVED = "approved"
     REJECTED = "rejected"
 
-class ValidationStatus(str, Enum):
-    PENDING = "pending"
-    VALID = "valid"
-    INVALID = "invalid"
-    NEEDS_REVIEW = "needs_review"
-    USER_REVIEWED = "user_reviewed"
-
 class BasicInfo(BaseModel):
-    number_of_travellers: Optional[int] = None
-    travel_purpose: Optional[str] = None
-    approximate_travel_date: Optional[str] = None
-    destination_country: Optional[str] = None
+    country: Optional[str] = None
+    country_code: Optional[str] = None
+    visa_type: Optional[str] = None
+    purpose: Optional[str] = None
+    number_of_travelers: Optional[int] = None
+    travel_dates: Optional[Dict[str, Any]] = Field(default_factory=dict)  # {"entry_date": "", "exit_date": ""}
 
-class SuggestedVisaType(BaseModel):
-    visa_type: str
-    confidence: float
-    reasons: List[str]
-    max_days: int
-    visa_code: Optional[str] = None
+class WorkflowInfo(BaseModel):
+    workflow_file: Optional[str] = None  # e.g., "VNM_tourism_single_entry_workflow.json"
+    current_stage: Optional[str] = None  # e.g., "stage_1_documents"
+    completed_stages: List[str] = Field(default_factory=list)
+    stage_progress: Dict[str, Any] = Field(default_factory=dict)
 
-class DocumentStatus(BaseModel):
-    status: str  # "pending", "completed", "failed"
-    document_id: Optional[str] = None
-    extracted_info: Optional[Dict[str, Any]] = None
+class DocumentInfo(BaseModel):
+    file_path: Optional[str] = None
+    upload_timestamp: Optional[datetime] = None
+    file_type: Optional[str] = None
+    extraction_status: str = "pending"  # pending, completed, failed
+    extracted_data: Dict[str, Any] = Field(default_factory=dict)
 
-class CollectedData(BaseModel):
-    passport: Optional[DocumentStatus] = None
-    photo: Optional[DocumentStatus] = None
-    travel_details: Optional[Dict[str, Any]] = None
-    bank_statement: Optional[DocumentStatus] = None
-    invitation_letter: Optional[DocumentStatus] = None
-
-class WorkflowProgress(BaseModel):
-    current_step: int = 0
-    completed_steps: List[int] = []
-    total_steps: int = 0
-    progress_percentage: float = 0.0
-
-class ValidationResult(BaseModel):
-    status: ValidationStatus
-    issues: List[str] = []
-
-class ValidationResults(BaseModel):
-    passport: Optional[ValidationResult] = None
-    photo: Optional[ValidationResult] = None
-    travel_details: Optional[ValidationResult] = None
-    bank_statement: Optional[ValidationResult] = None
-    overall_status: ValidationStatus = ValidationStatus.PENDING
+class TravelerData(BaseModel):
+    traveler_id: int
+    is_primary_applicant: bool = False
+    documents: Dict[str, DocumentInfo] = Field(default_factory=dict)  # Dynamic: {"passport_bio_page": DocumentInfo, ...}
+    collected_data: Dict[str, Any] = Field(default_factory=dict)  # Dynamic: {"personal_info": {...}, "contact_info": {...}}
 
 class VisaApplication(Document):
+    # Unique identifiers
+    visa_application_id: Optional[str] = Field(default=None, index=True)  # Custom format: VA_{user_id}_{date}_{counter}
     user_id: str = Field(index=True)
-    status: ApplicationStatus = ApplicationStatus.COLLECTING_BASIC_INFO
+
+    # Status tracking
+    status: ApplicationStatus = ApplicationStatus.IN_PROGRESS
+
+    # Basic information (from Phase 1 collection)
     basic_info: BasicInfo = Field(default_factory=BasicInfo)
-    suggested_visa_types: List[SuggestedVisaType] = Field(default_factory=list)
-    confirmed_visa_type: Optional[str] = None
-    workflow_progress: WorkflowProgress = Field(default_factory=WorkflowProgress)
-    collected_data: CollectedData = Field(default_factory=CollectedData)
-    validation_results: ValidationResults = Field(default_factory=ValidationResults)
-    generated_form: Optional[Dict[str, Any]] = None
-    reference_number: Optional[str] = Field(default=None, index=True)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    # Workflow tracking
+    workflow_info: WorkflowInfo = Field(default_factory=WorkflowInfo)
+
+    # Multi-traveler support with dynamic data structure
+    travelers: List[TravelerData] = Field(default_factory=list)
+
+    # Additional metadata
+    completion_percentage: float = 0.0
+    automation_js_file: Optional[Dict[str, Any]] = None  # {"file_path": "", "generated_at": ""}
+    submission_timestamp: Optional[datetime] = None
+    decision_date: Optional[datetime] = None
+    processed_by: Optional[str] = None
+
+    # Status history for audit trail
+    status_history: List[Dict[str, Any]] = Field(default_factory=list)
+
+    # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     class Settings:
         collection = "visa_applications"
+
+    def update_timestamp(self):
+        """Update the updated_at timestamp"""
+        self.updated_at = datetime.utcnow()
+
+    async def update_status(self, new_status: ApplicationStatus, metadata: Dict[str, Any] = None):
+        """Update application status with timestamp and audit trail"""
+        self.status = new_status
+        self.update_timestamp()
+
+        # Add to status history
+        self.status_history.append({
+            "status": new_status,
+            "timestamp": datetime.utcnow(),
+            "metadata": metadata or {}
+        })
+
+        await self.save()
+
+    def get_primary_traveler(self) -> Optional[TravelerData]:
+        """Get the primary applicant traveler"""
+        for traveler in self.travelers:
+            if traveler.is_primary_applicant:
+                return traveler
+        return self.travelers[0] if self.travelers else None

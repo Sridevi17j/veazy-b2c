@@ -1,6 +1,6 @@
 # models/__init__.py
 from .user import User
-from .visa_application import VisaApplication, BasicInfo, CollectedData, WorkflowProgress, ValidationResults
+from .visa_application import VisaApplication, BasicInfo, WorkflowInfo, DocumentInfo, TravelerData, ApplicationStatus
 from .document import DocumentModel, ExtractedData, ConfidenceScores
 from .workflow import Workflow, WorkflowStep, ProcessingInfo
 from .visa_type_selection import VisaTypeSelection, VisaTypeRule, SelectionCriteria, MatchWeights
@@ -12,19 +12,20 @@ from .comprehensive_visa_application import ComprehensiveVisaApplication
 
 __all__ = [
     "User",
-    "VisaApplication", 
+    "VisaApplication",
     "BasicInfo",
-    "CollectedData",
-    "WorkflowProgress",
-    "ValidationResults",
+    "WorkflowInfo",
+    "DocumentInfo",
+    "TravelerData",
+    "ApplicationStatus",
     "DocumentModel",
-    "ExtractedData", 
+    "ExtractedData",
     "ConfidenceScores",
     "Workflow",
     "WorkflowStep",
     "ProcessingInfo",
     "VisaTypeSelection",
-    "VisaTypeRule", 
+    "VisaTypeRule",
     "SelectionCriteria",
     "MatchWeights",
     "FormTemplate",

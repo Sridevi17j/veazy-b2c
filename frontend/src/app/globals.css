@@ -106,6 +106,8 @@ All colors MUST be HSL.
 .react-date-picker {
   width: 100%;
   max-width: 100%;
+  position: relative;
+  z-index: 50;
 }
 
 .react-date-picker__wrapper {
@@ -176,6 +178,8 @@ All colors MUST be HSL.
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   padding: 16px;
   font-family: inherit;
+  z-index: 9999 !important;
+  position: relative;
 }
 
 .react-calendar__navigation {
@@ -238,11 +242,35 @@ All colors MUST be HSL.
   font-weight: normal !important;
 }
 
-/* Then apply active styles */
+/* Highlight today's date with prominent orange border */
+.react-calendar__tile--now {
+  background: white !important;
+  color: #ea580c !important;
+  font-weight: 600 !important;
+  border: 3px solid #ea580c !important;
+  box-shadow: 0 0 0 1px #fed7aa !important;
+}
+
+.react-calendar__tile--now:hover {
+  background: #fff7ed !important;
+  color: #ea580c !important;
+  border: 3px solid #ea580c !important;
+}
+
+/* Selected date gets darker blue (takes precedence) */
 .react-calendar__tile--active {
   background: #3b82f6 !important;
   color: white !important;
   font-weight: 600 !important;
+  border: 2px solid #1e40af !important;
+}
+
+/* If today is selected, use the selected style */
+.react-calendar__tile--now.react-calendar__tile--active {
+  background: #3b82f6 !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border: 2px solid #1e40af !important;
 }
 
 /* Hover for active tiles */
@@ -265,14 +293,21 @@ All colors MUST be HSL.
   color: #dc2626;
 }
 
-/* Remove today highlighting to avoid confusion */
-.react-calendar__tile--now {
-  background: transparent !important;
-  color: inherit !important;
+/* Disabled dates (past dates) styling - much darker */
+.react-calendar__tile:disabled {
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  font-weight: normal !important;
+  border: none !important;
+  opacity: 0.5 !important;
 }
 
-.react-calendar__tile--now:hover {
-  background: #f3f4f6 !important;
+.react-calendar__tile:disabled:hover {
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
 }
 
 /* Chat UI Styles */

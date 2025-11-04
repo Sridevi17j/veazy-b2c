@@ -13,6 +13,8 @@ interface CustomDatePickerProps {
   selected?: Date;
   /** Callback when date is selected */
   onSelect?: (date: Date | undefined) => void;
+  /** Callback when date is selected and calendar has closed */
+  onDateSelectedAndClosed?: () => void;
   /** Input placeholder text */
   placeholder?: string;
   /** Label for the input field */
@@ -29,11 +31,16 @@ interface CustomDatePickerProps {
   error?: boolean;
   /** Error message */
   errorMessage?: string;
+  /** Control to open calendar programmatically */
+  shouldOpen?: boolean;
+  /** Callback when calendar opens */
+  onCalendarOpened?: () => void;
 }
 
 export default function CustomDatePicker({
   selected,
   onSelect,
+  onDateSelectedAndClosed,
   placeholder = 'Select date',
   label,
   fromDate,
@@ -41,7 +48,9 @@ export default function CustomDatePicker({
   className = '',
   disabled = false,
   error = false,
-  errorMessage
+  errorMessage,
+  shouldOpen = false,
+  onCalendarOpened
 }: CustomDatePickerProps) {
   const [value, setValue] = useState<Value>(selected || null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -52,19 +61,29 @@ export default function CustomDatePicker({
     setValue(selected || null);
   }, [selected]);
 
+  // Handle programmatic open
+  useEffect(() => {
+    if (shouldOpen && !isCalendarOpen) {
+      setIsCalendarOpen(true);
+      setIsClosing(false);
+    }
+  }, [shouldOpen]);
+
   const handleDateChange = (date: Value) => {
     // Immediately update internal state for instant visual feedback
     setValue(date);
-    
+
     // Start closing process
     setIsClosing(true);
-    
+
     // Show the selection change for a brief moment, then close
     setTimeout(() => {
       setIsCalendarOpen(false);
       setIsClosing(false);
+      // Call the callback after calendar is closed
+      onDateSelectedAndClosed?.();
     }, 400); // 400ms delay to see the selection change
-    
+
     // Convert Value type to Date | undefined for our callback
     if (Array.isArray(date)) {
       onSelect?.(date[0] || undefined);
@@ -76,6 +95,7 @@ export default function CustomDatePicker({
   const handleCalendarOpen = () => {
     setIsCalendarOpen(true);
     setIsClosing(false);
+    onCalendarOpened?.();
   };
 
   const handleCalendarClose = () => {

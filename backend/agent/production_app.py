@@ -137,7 +137,7 @@ async def run_thread(thread_id: str, request: MessageRequest):
         # Get the latest user message
         user_message = request.messages[-1]["content"]
         
-        # Get current thread state or create new one
+        # Get current thread state or create new one (this endpoint doesn't have current_user, but shouldn't be used anyway)
         if thread_id not in thread_states:
             thread_states[thread_id] = {
                 "messages": [],
@@ -265,6 +265,7 @@ async def stream_run(thread_id: str, request: dict, current_user: User = Depends
             thread_states[thread_id] = {
                 "messages": [],
                 "session_id": thread_id,
+                "user_id": str(current_user.id),  # Add user_id to thread state
                 "tool_call_count": 0,
                 "state_version": 1
             }
@@ -317,7 +318,7 @@ async def stream_run(thread_id: str, request: dict, current_user: User = Depends
                         full_ai_response += token_content
                         ai_message_obj = {
                             "id": f"ai_{thread_id}_{token_content[:10]}",
-                            "type": "ai", 
+                            "type": "ai",
                             "content": token_content,
                             "created_at": "2025-01-01T00:00:00Z"
                         }

@@ -2,15 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Header from '@/components/Header'
 import VisaDetails from '@/components/VisaDetails'
+import { useAuth } from '@/contexts/AuthContext';
+
+const AuthModal = dynamic(() => import('@/components/AuthModal'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse">Loading...</div>
+});
 
 export default function VisaInformationPage() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>('');
   const [selectedPurpose, setSelectedPurpose] = useState<string>('');
+  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const params = useParams();
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
 
   // Parse URL parameters to get country and purpose
   useEffect(() => {
@@ -37,17 +46,22 @@ export default function VisaInformationPage() {
   }, [params]);
 
   const handleChatOpen = () => {
-    if (selectedCountry && selectedPurpose) {
-      // Create SEO-friendly URL for chat with current date
-      const countrySlug = selectedCountry.toLowerCase().replace(/\s+/g, '-');
-      const purposeSlug = selectedPurpose.toLowerCase().replace(/\s+/g, '-') + '-visa';
-      const dateSlug = new Date().toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
-      }).toLowerCase().replace(/\s+/g, '-');
-      
-      router.push(`/visa-assistant/${countrySlug}/${purposeSlug}/${dateSlug}`);
+    if (isAuthenticated) {
+      // If authenticated, navigate to visa assistant
+      router.push('/visa-assistant');
+    } else {
+      // If not authenticated, open auth modal
+      setIsAuthOpen(true);
     }
+  };
+
+  const handleAuthSuccess = () => {
+    setIsAuthOpen(false);
+    router.push('/visa-assistant');
+  };
+
+  const handleAuthClose = () => {
+    setIsAuthOpen(false);
   };
 
   if (!selectedCountry || !selectedPurpose) {
@@ -89,11 +103,17 @@ export default function VisaInformationPage() {
         </div>
       </section>
 
-      <VisaDetails 
+      <VisaDetails
         country={selectedCountry}
         countryCode={selectedCountryCode}
         purpose={selectedPurpose}
         onChatOpen={handleChatOpen}
+      />
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={handleAuthClose}
+        onSuccess={handleAuthSuccess}
       />
     </div>
   );

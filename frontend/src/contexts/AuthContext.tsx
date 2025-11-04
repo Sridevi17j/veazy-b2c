@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
+import { BACKEND_URL } from '@/config/api';
 
 interface User {
   id: string;
@@ -75,8 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return false;
       }
 
-      // const response = await fetch('http://localhost:8000/api/auth/session', {
-      const response = await fetch('https://veazy-backend.onrender.com/api/auth/session', {
+      const response = await fetch(`${BACKEND_URL}/api/auth/session`, {
         headers: getAuthHeaders(),
       });
 
@@ -116,8 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = useCallback(async () => {
     try {
-      // await fetch('http://localhost:8000/api/auth/logout', {
-      await fetch('https://veazy-backend.onrender.com/api/auth/logout', {
+      await fetch(`${BACKEND_URL}/api/auth/logout`, {
         method: 'POST',
         headers: getAuthHeaders(),
       });

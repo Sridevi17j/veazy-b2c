@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import ChatMessage from './ChatMessage';
 import TypingIndicator from './TypingIndicator';
+import { BACKEND_URL } from '@/config/api';
 
 interface Message {
   id: string;
@@ -37,9 +38,6 @@ export default function ChatInterface({ isOpen, onClose, initialContext }: ChatI
   
   const { user, logout, getAuthHeaders } = useAuth();
   const router = useRouter();
-
-  // const BACKEND_URL = 'http://localhost:8000';
-  const BACKEND_URL = 'https://veazy-backend.onrender.com';
 
   // Create thread when chat opens
   useEffect(() => {

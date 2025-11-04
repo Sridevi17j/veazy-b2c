@@ -49,11 +49,16 @@ async def base_information_collector_tool(user_message: str) -> str:
     
     Args:
         user_message: The user's input containing application details
-    
+
     Returns:
         String response for collecting basic visa information
     """
-    
+
+    print("=" * 80)
+    print("🔧 BASE_INFORMATION_COLLECTOR_TOOL CALLED!")
+    print(f"📝 User message: {user_message}")
+    print("=" * 80)
+
     try:
         # Extract information from user message
         extracted_info = _extract_basic_visa_info_simple(user_message)

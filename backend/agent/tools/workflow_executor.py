@@ -7,11 +7,12 @@ sys.path.append('../..')
 import json
 from typing import Dict, List, Optional, Any, Literal
 from typing_extensions import Annotated
+from datetime import datetime
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import InjectedState
 from config.settings import invoke_llm_safe
-from database.models.comprehensive_visa_application import ComprehensiveVisaApplication, DocumentInfo
+from database.models.visa_application import VisaApplication, DocumentInfo
 
 # Workflow state management
 workflow_states = {}  # In-memory state store (can be moved to database later)
@@ -60,22 +61,29 @@ class WorkflowState:
 
 @tool
 async def workflow_executor_tool(
-    user_message: str, 
+    user_message: str,
     intent_type: str = "workflow_progress",
     state: Annotated[dict, InjectedState] = None
 ) -> str:
     """
     Advanced workflow executor with state management and deviation handling.
-    
+    Now delegates to intelligent workflow agent when workflow session is active.
+
     Args:
         user_message: User's input message
-        thread_id: Unique thread identifier for state persistence
         intent_type: Type of interaction (workflow_progress, deviation, modification, etc.)
-    
+        state: Injected agent state containing session_id and user_id
+
     Returns:
         Appropriate response based on workflow state and user intent
     """
-    
+
+    print("=" * 80)
+    print("🔧 WORKFLOW_EXECUTOR_TOOL CALLED!")
+    print(f"📝 User message: {user_message}")
+    print(f"📝 Intent type: {intent_type}")
+    print("=" * 80)
+
     try:
         # Extract session_id from injected state
         thread_id = "default_thread"  # fallback
@@ -84,56 +92,169 @@ async def workflow_executor_tool(
             print(f"DEBUG: State injected successfully: session_id={thread_id}")
         else:
             print(f"DEBUG: No state injected, using fallback: {thread_id}")
-            
+
         print(f"DEBUG: workflow_executor_tool called with thread_id: {thread_id}, user_message: {user_message[:50]}...")
-        
+
+        # Get user_id from injected agent state
+        user_id = state.get("user_id") if state else None
+        print(f"DEBUG: Got user_id: {user_id} from injected agent state")
+
+        # CRITICAL: Check if intelligent workflow agent session exists
+        try:
+            from agent.agents.intelligent_workflow_agent import (
+                workflow_sessions,
+                collect_data_item,
+                process_document_extraction,
+                execute_current_stage,
+                advance_to_next_stage
+            )
+
+            if thread_id in workflow_sessions:
+                print(f"DEBUG: Found active workflow session for {thread_id} - delegating to intelligent workflow agent")
+
+                # Delegate to intelligent workflow agent based on intent_type
+                if intent_type == "document_processed" or "upload" in user_message.lower():
+                    # User uploaded a document - need to process it first with document_processing_tool
+                    print(f"DEBUG: User uploaded document - calling document_processing_tool first")
+
+                    # Import document processing tool and workflow agent tools
+                    from agent.tools.document_processing import document_processing_tool
+                    from agent.agents.intelligent_workflow_agent import (
+                        validate_stage_completion,
+                        advance_to_next_stage
+                    )
+
+                    # Process document with GPT-4 Vision extraction
+                    doc_result = await document_processing_tool.ainvoke({
+                        "user_message": user_message,
+                        "document_type": "passport_bio_page",  # Can be made smarter with LLM analysis
+                        "session_id": thread_id,
+                        "user_id": user_id  # Pass user_id directly
+                    })
+
+                    print(f"DEBUG: Document processing result: {doc_result[:200]}...")
+
+                    # Check if current stage is now complete
+                    try:
+                        is_complete = await validate_stage_completion.ainvoke({
+                            "thread_id": thread_id,
+                            "state": state
+                        })
+
+                        print(f"DEBUG: Stage completion check: {is_complete}")
+
+                        # If stage complete, advance to next stage
+                        if "complete" in is_complete.lower() or "yes" in is_complete.lower():
+                            advance_result = await advance_to_next_stage.ainvoke({
+                                "thread_id": thread_id,
+                                "state": state
+                            })
+                            return f"{doc_result}\n\n---\n\n{advance_result}"
+                        else:
+                            return doc_result
+
+                    except Exception as e:
+                        print(f"DEBUG: Could not check stage completion: {e}")
+                        # Fallback: just return document result
+                        return doc_result
+
+                elif intent_type == "deviation":
+                    # User asked a question during workflow
+                    print(f"DEBUG: Handling deviation - calling execute_current_stage to maintain context")
+                    # For deviations, we answer the question then remind them of current stage
+                    deviation_response = f"Let me help with that: {user_message}\n\n"
+                    stage_reminder = await execute_current_stage.ainvoke({
+                        "thread_id": thread_id,
+                        "state": state
+                    })
+                    return deviation_response + "\n\n" + stage_reminder
+
+                elif intent_type == "modification":
+                    # User wants to modify previously provided data
+                    print(f"DEBUG: Handling modification via collect_data_item")
+                    result = await collect_data_item.ainvoke({
+                        "thread_id": thread_id,
+                        "field_name": "modification_request",
+                        "field_value": user_message,
+                        "state": state
+                    })
+                    return result
+
+                else:
+                    # Default: user providing data for current stage
+                    print(f"DEBUG: Default workflow progress - calling collect_data_item")
+
+                    # First, try to collect the data
+                    result = await collect_data_item.ainvoke({
+                        "thread_id": thread_id,
+                        "field_name": "user_input",
+                        "field_value": user_message,
+                        "state": state
+                    })
+
+                    return result
+
+            else:
+                print(f"DEBUG: No active workflow session found - using fallback OLD workflow logic")
+                # Fall through to old workflow logic below
+
+        except ImportError as e:
+            print(f"DEBUG: Could not import intelligent workflow agent: {e}")
+            # Fall through to old workflow logic
+
+        # === OLD WORKFLOW LOGIC (FALLBACK) ===
+        # This should rarely be used now, but kept for backward compatibility
+
+        # Fallback: try thread state if not in agent state
+        if not user_id:
+            user_id = _get_user_id_from_thread(thread_id)
+            print(f"DEBUG: Fallback - Got user_id: {user_id} from thread: {thread_id}")
+
         # Get or create workflow state and database application
-        state = _get_workflow_state(thread_id)
-        
-        # Get user_id from thread state (if available)
-        user_id = _get_user_id_from_thread(thread_id)
-        print(f"DEBUG: Got user_id: {user_id} from thread: {thread_id}")
-        
-        # Direct database access - ensure application exists
-        db_application = await ComprehensiveVisaApplication.find_one({"thread_id": thread_id})
+        workflow_state = _get_workflow_state(thread_id)
+
+        # Direct database access - ensure application exists (find by user_id)
+        db_application = await VisaApplication.find_one({"user_id": user_id, "status": "in_progress"})
         if not db_application:
-            # Create new application linked to both user_id and thread_id
-            unique_app_id = f"{user_id}_{thread_id}" if user_id else thread_id
-            db_application = ComprehensiveVisaApplication(
-                application_id=unique_app_id,
-                thread_id=thread_id,
-                user_id=user_id,  # Link to user
-                visa_type=state.visa_type
+            # Create new application linked to user_id
+            unique_app_id = f"VA_{user_id}_{datetime.now().strftime('%Y%m%d')}_{thread_id[:8]}"
+            db_application = VisaApplication(
+                visa_application_id=unique_app_id,
+                user_id=user_id,
+                status="in_progress"
             )
             print(f"DEBUG: Creating new visa application with data: {db_application.dict()}")
             await db_application.insert()
-            print(f"SUCCESS: Created new visa application: {unique_app_id} for user: {user_id}, thread: {thread_id}")
+            print(f"SUCCESS: Created new visa application: {unique_app_id} for user: {user_id}")
         else:
-            print(f"DEBUG: Found existing application: {db_application.application_id}")
-        
+            print(f"DEBUG: Found existing application: {db_application.visa_application_id}")
+
         # Load workflow JSON if not already loaded
-        if not state.workflow_json:
-            state.workflow_json = await _get_workflow_json(state.visa_type)
-        
+        if not workflow_state.workflow_json:
+            workflow_state.workflow_json = await _get_workflow_json(workflow_state.visa_type)
+
         # Route based on intent type
         print(f"DEBUG: Routing based on intent_type: {intent_type}")
         if intent_type == "deviation":
             print("DEBUG: Handling deviation")
-            return await _handle_deviation(state, user_message)
+            return await _handle_deviation(workflow_state, user_message)
         elif intent_type == "modification":
             print("DEBUG: Handling modification")
-            return await _handle_data_modification(state, user_message)
+            return await _handle_data_modification(workflow_state, user_message)
         elif intent_type == "resume":
             print("DEBUG: Handling resume")
-            return await _resume_workflow(state)
+            return await _resume_workflow(workflow_state)
         elif intent_type == "document_processed":
             print("DEBUG: Handling document_processed")
-            return await _handle_document_processed(state, user_message, thread_id)
+            return await _handle_document_processed(workflow_state, user_message, thread_id)
         else:
             print("DEBUG: Default - calling _progress_workflow")
-            return await _progress_workflow(state, user_message)
-            
+            return await _progress_workflow(workflow_state, user_message)
+
     except Exception as e:
+        print(f"ERROR in workflow_executor_tool: {e}")
+        import traceback
+        print(f"DEBUG: Full traceback: {traceback.format_exc()}")
         return f"I encountered an issue with your visa application. Let me help you continue from where we left off. What would you like to do next?"
 
 
@@ -155,10 +276,43 @@ def _get_user_id_from_thread(thread_id: str) -> Optional[str]:
         sys.path.append('..')
         from agent.production_app import thread_states
         
+        print(f"DEBUG: Available thread_ids in thread_states: {list(thread_states.keys())}")
         thread_state = thread_states.get(thread_id, {})
-        return thread_state.get("user_id")
+        print(f"DEBUG: Thread state for {thread_id}: {thread_state}")
+        user_id = thread_state.get("user_id")
+        print(f"DEBUG: Extracted user_id: {user_id}")
+        return user_id
     except Exception as e:
         print(f"Could not get user_id from thread {thread_id}: {e}")
+        import traceback
+        print(f"DEBUG: Full traceback: {traceback.format_exc()}")
+        return None
+
+def _extract_user_id_from_jwt_token(authorization_header: Optional[str]) -> Optional[str]:
+    """Extract user_id directly from JWT token in Authorization header"""
+    if not authorization_header:
+        return None
+    
+    try:
+        # Extract token from "Bearer <token>" format
+        if not authorization_header.startswith("Bearer "):
+            return None
+        
+        token = authorization_header.replace("Bearer ", "")
+        
+        # Import JWT service
+        from services.jwt_service import jwt_service
+        
+        # Verify and decode token
+        result = jwt_service.verify_token(token)
+        if result['success']:
+            return result['data']['user_id']
+        else:
+            print(f"JWT token verification failed: {result.get('error')}")
+            return None
+            
+    except Exception as e:
+        print(f"Error extracting user_id from JWT token: {e}")
         return None
 
 
@@ -531,54 +685,32 @@ async def _get_workflow_json(visa_type: str) -> Optional[dict]:
 async def _update_stage_data(thread_id: str, stage: str, stage_data: Dict[str, Any]) -> None:
     """Update stage-specific data in database using direct model access"""
     try:
-        # Single fetch
-        application = await ComprehensiveVisaApplication.find_one({"thread_id": thread_id})
+        # Get user_id from thread
+        user_id = _get_user_id_from_thread(thread_id)
+        if not user_id:
+            return
+
+        # Single fetch by user_id
+        application = await VisaApplication.find_one({"user_id": user_id, "status": "in_progress"})
         if not application:
             return
         
-        # Update stage-specific fields
-        if stage == "documents":
-            # Handle document data
-            for field, value in stage_data.items():
-                if hasattr(application.documents, field):
-                    setattr(application.documents, field, value)
-                    
-        elif stage == "personal_info":
-            for field, value in stage_data.items():
-                if hasattr(application.personal_info, field) and value is not None:
-                    setattr(application.personal_info, field, value)
-                    
-        elif stage == "contact_info":
-            for field, value in stage_data.items():
-                if hasattr(application.contact_info, field) and value is not None:
-                    setattr(application.contact_info, field, value)
-                    
-        elif stage == "occupation_info":
-            for field, value in stage_data.items():
-                if hasattr(application.occupation_info, field) and value is not None:
-                    setattr(application.occupation_info, field, value)
-                    
-        elif stage == "travel_info":
-            for field, value in stage_data.items():
-                if hasattr(application.travel_info, field) and value is not None:
-                    setattr(application.travel_info, field, value)
-                    
-        elif stage == "emergency_contact":
-            for field, value in stage_data.items():
-                if hasattr(application.emergency_contact, field) and value is not None:
-                    setattr(application.emergency_contact, field, value)
-                    
-        elif stage == "financial_info":
-            for field, value in stage_data.items():
-                if hasattr(application.financial_info, field) and value is not None:
-                    setattr(application.financial_info, field, value)
-        
-        # Update raw collected data for flexibility
-        application.raw_collected_data[stage] = stage_data
-        
+        # Get or create primary traveler
+        primary_traveler = application.get_primary_traveler()
+        if not primary_traveler:
+            from database.models.visa_application import TravelerData
+            primary_traveler = TravelerData(traveler_id=1, is_primary_applicant=True)
+            application.travelers.append(primary_traveler)
+
+        # Store data dynamically in collected_data
+        if stage not in primary_traveler.collected_data:
+            primary_traveler.collected_data[stage] = {}
+
+        primary_traveler.collected_data[stage].update(stage_data)
+
         # Update timestamp
         application.update_timestamp()
-        
+
         # Single save
         await application.save()
         
@@ -589,21 +721,26 @@ async def _update_stage_data(thread_id: str, stage: str, stage_data: Dict[str, A
 async def _mark_stage_complete(thread_id: str, completed_stage: str) -> None:
     """Mark a stage as complete in database"""
     try:
-        # Single fetch
-        application = await ComprehensiveVisaApplication.find_one({"thread_id": thread_id})
+        # Get user_id from thread
+        user_id = _get_user_id_from_thread(thread_id)
+        if not user_id:
+            return
+
+        # Single fetch by user_id
+        application = await VisaApplication.find_one({"user_id": user_id, "status": "in_progress"})
         if not application:
             return
-        
+
         # Mark stage complete
-        if completed_stage not in application.workflow_progress.completed_stages:
-            application.workflow_progress.completed_stages.append(completed_stage)
-        
+        if completed_stage not in application.workflow_info.completed_stages:
+            application.workflow_info.completed_stages.append(completed_stage)
+
         # Update current stage
-        application.workflow_progress.current_stage = completed_stage
-        
+        application.workflow_info.current_stage = completed_stage
+
         # Update timestamp
         application.update_timestamp()
-        
+
         # Single save
         await application.save()
         
@@ -614,26 +751,27 @@ async def _mark_stage_complete(thread_id: str, completed_stage: str) -> None:
 async def _get_application_data(thread_id: str) -> Optional[Dict[str, Any]]:
     """Get complete application data from database"""
     try:
-        application = await ComprehensiveVisaApplication.find_one({"thread_id": thread_id})
+        # Get user_id from thread
+        user_id = _get_user_id_from_thread(thread_id)
+        if not user_id:
+            return None
+
+        application = await VisaApplication.find_one({"user_id": user_id, "status": "in_progress"})
         if not application:
             return None
-            
+
         return {
-            "application_id": application.application_id,
-            "thread_id": application.thread_id,
-            "visa_type": application.visa_type,
+            "visa_application_id": application.visa_application_id,
+            "user_id": application.user_id,
             "status": application.status,
-            "completion_percentage": application.get_completion_percentage(),
-            "current_stage": application.workflow_progress.current_stage,
-            "completed_stages": application.workflow_progress.completed_stages,
-            "personal_info": application.personal_info.dict(),
-            "contact_info": application.contact_info.dict(),
-            "travel_info": application.travel_info.dict(),
-            "documents": application.documents.dict(),
+            "basic_info": application.basic_info.dict(),
+            "workflow_info": application.workflow_info.dict(),
+            "completion_percentage": application.completion_percentage,
+            "travelers": [t.dict() for t in application.travelers],
             "created_at": application.created_at,
             "updated_at": application.updated_at
         }
-        
+
     except Exception as e:
         print(f"Error getting application data: {e}")
         return None

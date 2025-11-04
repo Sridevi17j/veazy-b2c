@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { BACKEND_URL } from '@/config/api';
 
 interface VisaDetailsProps {
   country: string;
@@ -47,8 +48,7 @@ export default function VisaDetails({ country, countryCode, purpose, onChatOpen 
     setError(null);
     
     try {
-      // const response = await fetch(`http://localhost:8000/api/countries/${countryCode}/purposes/${purpose}/visa-details`); // Local development
-      const response = await fetch(`https://veazy-backend.onrender.com/api/countries/${countryCode}/purposes/${purpose}/visa-details`);
+      const response = await fetch(`${BACKEND_URL}/api/countries/${countryCode}/purposes/${purpose}/visa-details`);
       if (!response.ok) {
         throw new Error('Failed to fetch visa details');
       }

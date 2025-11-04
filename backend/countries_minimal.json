@@ -1,0 +1,26 @@
+[
+  {
+    "code": "THA",
+    "name": "Thailand",
+    "official_name": "Kingdom of Thailand",
+    "currency": "THB"
+  },
+  {
+    "code": "VNM", 
+    "name": "Vietnam",
+    "official_name": "Socialist Republic of Vietnam",
+    "currency": "VND"
+  },
+  {
+    "code": "ARE",
+    "name": "United Arab Emirates", 
+    "official_name": "United Arab Emirates",
+    "currency": "AED"
+  },
+  {
+    "code": "IDN",
+    "name": "Indonesia",
+    "official_name": "Republic of Indonesia", 
+    "currency": "IDR"
+  }
+]

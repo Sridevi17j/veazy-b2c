@@ -13,20 +13,25 @@ from agent.state import AgentState
 def greetings_tool(user_message: str) -> str:
     """
     Handle user greetings, general conversation, and off-topic questions.
-    
+
     Use this tool when:
     - User says "hi", "hello", "hey", or other greetings
     - User asks off-topic questions unrelated to visas
     - User needs clarification about what you can help with
     - General conversation or small talk
-    
+
     Args:
         user_message: The user's input message
-    
+
     Returns:
         String response that the agent can use to formulate a natural reply
     """
-    
+
+    print("=" * 80)
+    print("🔧 GREETINGS_TOOL CALLED!")
+    print(f"📝 User message: {user_message}")
+    print("=" * 80)
+
     # Determine appropriate greeting response
     response = _generate_greeting_response(user_message)
     

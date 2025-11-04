@@ -15,20 +15,25 @@ from config.settings import invoke_llm_safe
 def general_enquiry_tool(user_message: str) -> str:
     """
     Provide visa information, requirements, and policies for specific countries.
-    
+
     Use this tool when:
     - User asks about visa requirements for a country
     - User wants to know processing times, fees, or documentation
     - User asks general visa policy questions
     - User needs information about entry requirements
-    
+
     Args:
         user_message: The user's visa information query
-    
+
     Returns:
         String response with visa information that the agent can use
     """
-    
+
+    print("=" * 80)
+    print("🔧 GENERAL_ENQUIRY_TOOL CALLED!")
+    print(f"📝 User message: {user_message}")
+    print("=" * 80)
+
     try:
         # Extract country from user query
         country = _extract_country_from_query(user_message)

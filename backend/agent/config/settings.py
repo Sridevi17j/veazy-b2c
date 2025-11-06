@@ -10,6 +10,10 @@ from langchain_core.language_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI  # Using Gemini for LangGraph compatibility
 from dotenv import load_dotenv
 
+# Langfuse imports for observability
+from langfuse import Langfuse
+from langfuse.langchain import CallbackHandler
+
 load_dotenv()
 
 # LLM Configuration with Error Handling and Streaming
@@ -174,10 +178,53 @@ class AppConfig:
         self.streaming_timeout = int(os.getenv("STREAMING_TIMEOUT", "60"))
 
 
+# Langfuse Configuration
+
+class LangfuseConfig:
+    """Langfuse observability configuration"""
+
+    def __init__(self):
+        self.enabled = os.getenv("LANGFUSE_ENABLED", "true").lower() == "true"
+        self.public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
+        self.secret_key = os.getenv("LANGFUSE_SECRET_KEY")
+        # Try LANGFUSE_BASE_URL first (standard), then fall back to LANGFUSE_HOST
+        self.host = os.getenv("LANGFUSE_BASE_URL") or os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+
+        # Initialize Langfuse client if credentials are provided
+        self.client = None
+        self.handler = None
+
+        if self.enabled and self.public_key and self.secret_key:
+            try:
+                self.client = Langfuse(
+                    public_key=self.public_key,
+                    secret_key=self.secret_key,
+                    host=self.host
+                )
+                # Test connection
+                self.client.auth_check()
+                print("✅ Langfuse initialized successfully")
+
+                # Create callback handler for LangChain integration
+                # Note: CallbackHandler reads from environment variables automatically
+                self.handler = CallbackHandler()
+            except Exception as e:
+                print(f"⚠️ Langfuse initialization failed: {e}")
+                self.enabled = False
+        elif self.enabled:
+            print("⚠️ Langfuse credentials not found. Tracing disabled.")
+            self.enabled = False
+
+    def get_callback_handler(self) -> Optional[CallbackHandler]:
+        """Get Langfuse callback handler for agent invocation"""
+        return self.handler if self.enabled else None
+
+
 # Global Instances
 
 llm_config = LLMConfig()
 app_config = AppConfig()
+langfuse_config = LangfuseConfig()
 
 # Export LLM instance for backward compatibility
 llm = llm_config.llm

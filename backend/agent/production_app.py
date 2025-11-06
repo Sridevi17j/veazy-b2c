@@ -11,6 +11,7 @@ from langchain_core.messages import HumanMessage
 # Import agent-based system
 from agent.agent import stream_agent, invoke_agent
 from agent.state import AgentState
+from agent.config.settings import langfuse_config
 
 # Import database and API routes
 import sys
@@ -174,6 +175,12 @@ async def run_thread(thread_id: str, request: MessageRequest):
         
         # Run the agent with config containing thread_id
         config = {"configurable": {"thread_id": thread_id}}
+
+        # Add Langfuse callback handler if available
+        langfuse_handler = langfuse_config.get_callback_handler()
+        if langfuse_handler:
+            config["callbacks"] = [langfuse_handler]
+
         result = invoke_agent(agent_input, config)
         
         # DEBUG: Check what tools were called
@@ -311,6 +318,12 @@ async def stream_run(thread_id: str, request: dict, current_user: User = Depends
             # Stream the AI response using agent streaming
             full_ai_response = ""
             config = {"configurable": {"thread_id": thread_id}}
+
+            # Add Langfuse callback handler if available
+            langfuse_handler = langfuse_config.get_callback_handler()
+            if langfuse_handler:
+                config["callbacks"] = [langfuse_handler]
+
             try:
                 async for chunk in stream_agent(agent_input, config):
                     if chunk and chunk.get("type") == "token":
